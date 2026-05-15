@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(npm install *)",
+      "Bash(JWT_SECRET=testsecret node -e \"require\\('./src/app'\\)\")",
+      "Bash(curl -s http://localhost:3000/api/auth/otp/request -H 'Content-Type: application/json' -d '{\"phone\":\"+919876543210\"}')",
+      "Bash(node -e \"const d=require\\('fs'\\).readFileSync\\('/dev/stdin','utf8'\\);console.log\\(JSON.parse\\(d\\)\\)\")",
+      "Bash(node src/app.js)",
+      "Bash(curl -s http://localhost:3000/)",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "mcp__Claude_in_Chrome__browser_batch",
+      "mcp__Claude_in_Chrome__computer",
+      "mcp__Claude_in_Chrome__javascript_tool",
+      "Bash(node -e ' *)",
+      "Bash(grep -v \"^$\")",
+      "Bash(node -e \"require\\('./src/app'\\); setTimeout\\(\\(\\)=>process.exit\\(0\\),500\\)\")",
+      "Bash(grep -v \"^$\\\\|MoodCircle API\")",
+      "Bash(git init *)",
+      "Bash(git add *)"
+    ]
+  }
+}

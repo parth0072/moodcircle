@@ -1,0 +1,1466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>MoodCircle</title>
+<style>
+:root {
+  --bg:     #F5F5F7;
+  --white:  #FFFFFF;
+  --border: #E4E4E7;
+  --border2:#D1D1D6;
+  --p:      #6C47FF;
+  --p-dim:  #EDE9FF;
+  --p-dark: #5533DD;
+
+  --m1:#EF4444; --m1b:#FEF2F2; --m1t:#EF4444;
+  --m2:#F97316; --m2b:#FFF7ED; --m2t:#F97316;
+  --m3:#EAB308; --m3b:#FEFCE8; --m3t:#A16207;
+  --m4:#22C55E; --m4b:#F0FDF4; --m4t:#15803D;
+  --m5:#6C47FF; --m5b:#EDE9FF; --m5t:#6C47FF;
+
+  --txt: #18181B; --txt2: #71717A; --txt3: #A1A1AA;
+  --r: 12px; --r2: 8px; --r3: 16px;
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; background: var(--bg); color: var(--txt); font-family: var(--font); -webkit-font-smoothing: antialiased; overflow: hidden; }
+button, input, textarea { font-family: var(--font); }
+
+#app { max-width: 390px; height: 100vh; margin: 0 auto; position: relative; overflow: hidden; background: var(--bg); }
+
+/* ── Screens ── */
+.screen { position: absolute; inset: 0; z-index: 1; display: flex; flex-direction: column; background: var(--bg); visibility: hidden; overflow: hidden; }
+.screen.active { visibility: visible; }
+
+/* ── Shared ── */
+.topbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 12px; border-bottom: 1px solid var(--border); background: var(--white); flex-shrink: 0; }
+.topbar-left  { display: flex; align-items: center; gap: 10px; }
+.topbar-right { display: flex; align-items: center; gap: 6px; }
+.topbar-title { font-size: 16px; font-weight: 700; }
+.icon-btn { width: 34px; height: 34px; border-radius: var(--r2); border: 1px solid var(--border); background: var(--white); display: flex; align-items: center; justify-content: center; color: var(--txt2); cursor: pointer; }
+
+.btn { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 12px 18px; border: none; border-radius: var(--r2); font-size: 15px; font-weight: 600; cursor: pointer; transition: opacity .15s; }
+.btn:active { opacity: .8; }
+.btn-primary { background: var(--p); color: #fff; }
+.btn-outline { background: var(--white); color: var(--txt); border: 1px solid var(--border2); }
+.btn-full { width: 100%; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label { font-size: 13px; font-weight: 500; color: var(--txt2); }
+.field-row { display: flex; gap: 6px; }
+.input { flex: 1; padding: 11px 13px; background: var(--white); border: 1px solid var(--border2); border-radius: var(--r2); color: var(--txt); font-size: 15px; outline: none; transition: border-color .15s; }
+.input:focus { border-color: var(--p); }
+.input::placeholder { color: var(--txt3); }
+.input-pre { padding: 11px 12px; background: var(--bg); border: 1px solid var(--border2); border-radius: var(--r2); font-size: 14px; color: var(--txt2); white-space: nowrap; }
+
+.bottom-nav { position: absolute; bottom: 0; left: 0; right: 0; z-index: 50; display: flex; align-items: flex-end; justify-content: space-around; padding: 10px 8px 26px; background: var(--white); border-top: 1px solid var(--border); }
+.nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 14px; cursor: pointer; border: none; background: none; color: var(--txt3); font-family: var(--font); }
+.nav-item.on { color: var(--p); }
+.nav-item svg { width: 22px; height: 22px; stroke-width: 1.7; }
+.nav-item span { font-size: 10px; font-weight: 500; }
+.nav-fab { width: 48px; height: 48px; border-radius: var(--r); border: none; background: var(--p); display: flex; align-items: center; justify-content: center; cursor: pointer; margin-bottom: 4px; }
+.nav-fab svg { width: 22px; height: 22px; color: #fff; stroke-width: 2.2; }
+
+/* ── Spinner ── */
+.spinner { width: 22px; height: 22px; border: 2.5px solid var(--border); border-top-color: var(--p); border-radius: 50%; animation: spin .7s linear infinite; }
+.spinner-lg { width: 36px; height: 36px; border-width: 3px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Toast ── */
+#toast { position: absolute; bottom: 82px; left: 50%; transform: translateX(-50%); background: var(--txt); color: #fff; border-radius: 99px; padding: 9px 18px; font-size: 13px; font-weight: 500; white-space: nowrap; z-index: 200; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; }
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+#toast.err { background: #EF4444; }
+
+/* ════ LOADING ════ */
+#s-loading { background: var(--white); align-items: center; justify-content: center; gap: 14px; }
+#s-loading p { font-size: 14px; color: var(--txt2); }
+
+/* ════ AUTH ════ */
+#s-auth { background: var(--white); justify-content: center; padding: 40px 24px; }
+.auth-logo { margin-bottom: 40px; }
+.logo-icon { width: 44px; height: 44px; border-radius: 12px; background: var(--p); display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
+.logo-icon svg { width: 26px; height: 26px; }
+.auth-logo h1 { font-size: 28px; font-weight: 800; margin-bottom: 4px; }
+.auth-logo p  { font-size: 15px; color: var(--txt2); }
+.auth-form { display: flex; flex-direction: column; gap: 14px; }
+.auth-note { font-size: 12px; color: var(--txt3); text-align: center; }
+
+/* ════ OTP ════ */
+#s-otp { background: var(--white); justify-content: center; padding: 40px 24px; }
+.otp-header { margin-bottom: 24px; }
+.otp-header h2 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+.otp-header p  { font-size: 14px; color: var(--txt2); }
+.otp-header strong { color: var(--txt); }
+.dev-otp-hint { background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: var(--r2); padding: 10px 14px; font-size: 13px; color: #15803D; margin-bottom: 20px; display: none; }
+.dev-otp-hint strong { font-size: 20px; letter-spacing: 4px; font-weight: 800; display: block; margin-top: 2px; }
+.otp-row { display: flex; gap: 8px; margin-bottom: 20px; }
+.otp-d { flex: 1; min-width: 0; height: 54px; background: var(--bg); border: 1px solid var(--border2); border-radius: var(--r2); color: var(--txt); font-size: 22px; font-weight: 700; text-align: center; outline: none; transition: border-color .15s; }
+.otp-d:focus { border-color: var(--p); }
+.otp-d.v { border-color: var(--p); background: var(--p-dim); }
+.resend { text-align: center; font-size: 14px; color: var(--txt2); margin-top: 14px; }
+.resend button { background: none; border: none; color: var(--p); font-weight: 600; cursor: pointer; font-size: 14px; font-family: var(--font); }
+
+/* ════ SETUP (no groups) ════ */
+#s-setup { background: var(--bg); }
+.setup-scroll { flex: 1; overflow-y: auto; padding: 20px 16px 40px; display: flex; flex-direction: column; gap: 14px; }
+.setup-scroll::-webkit-scrollbar { display: none; }
+.setup-hero { text-align: center; padding: 28px 16px 20px; }
+.setup-hero h2 { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+.setup-hero p  { font-size: 14px; color: var(--txt2); }
+.setup-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--r); padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+.setup-card h3 { font-size: 15px; font-weight: 700; }
+.setup-card p  { font-size: 13px; color: var(--txt2); }
+.divider-or { display: flex; align-items: center; gap: 10px; color: var(--txt3); font-size: 12px; }
+.divider-or::before, .divider-or::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ════ FEED ════ */
+.feed-scroll { flex: 1; overflow-y: auto; padding: 12px 14px 96px; display: flex; flex-direction: column; gap: 10px; }
+.feed-scroll::-webkit-scrollbar { display: none; }
+
+.vibe-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: var(--white); border: 1px solid var(--border); border-radius: var(--r); }
+.vibe-score { font-size: 24px; font-weight: 800; color: var(--p); }
+.vibe-sub   { font-size: 12px; color: var(--txt2); margin-top: 2px; }
+.member-row { display: flex; gap: 4px; margin-bottom: 6px; flex-wrap: wrap; }
+.m-dot { width: 26px; height: 26px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; }
+.m-dot.wait { background: var(--bg); border: 1px dashed var(--border2); color: var(--txt3); }
+.checkin-count { font-size: 12px; color: var(--txt2); }
+
+.streak-pill { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: #FFF7ED; border: 1px solid #FED7AA; border-radius: var(--r); }
+.streak-pill .icon { font-size: 20px; }
+.streak-pill .text strong { font-size: 14px; font-weight: 700; color: #C2410C; }
+.streak-pill .text small  { font-size: 12px; color: #9A3412; display: block; }
+.streak-count { margin-left: auto; font-size: 18px; font-weight: 800; color: #EA580C; }
+
+.checkin-bar { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: var(--p-dim); border: 1px solid #C4B5FD; border-radius: var(--r); }
+.checkin-bar .icon { font-size: 22px; }
+.checkin-bar .text h3 { font-size: 14px; font-weight: 600; color: var(--p); margin-bottom: 2px; }
+.checkin-bar .text p  { font-size: 12px; color: #7C3AED; }
+.checkin-bar button   { margin-left: auto; padding: 7px 14px; border: none; border-radius: var(--r2); background: var(--p); color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; font-family: var(--font); }
+
+.sec-head { display: flex; align-items: center; justify-content: space-between; padding: 2px 2px; }
+.sec-head span { font-size: 12px; font-weight: 600; color: var(--txt3); text-transform: uppercase; letter-spacing: .5px; }
+.sec-head a    { font-size: 13px; color: var(--p); cursor: pointer; }
+
+.mcard { background: var(--white); border: 1px solid var(--border); border-radius: var(--r); padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.mcard-top { display: flex; align-items: center; gap: 10px; }
+.av { width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; color: #fff; }
+.av-anon { background: var(--bg); border: 1px solid var(--border2); font-size: 18px; }
+.mc-info { flex: 1; min-width: 0; }
+.mc-name { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.mc-time { font-size: 12px; color: var(--txt3); }
+.anon-tag { font-size: 10px; padding: 1px 6px; border-radius: 99px; background: var(--bg); border: 1px solid var(--border2); color: var(--txt2); font-weight: 500; }
+.you-tag  { font-size: 10px; padding: 1px 6px; border-radius: 99px; background: var(--p-dim); border: 1px solid #C4B5FD; color: var(--p); font-weight: 500; }
+.mood-chip { padding: 4px 10px; border-radius: 99px; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.pips { display: flex; gap: 3px; }
+.pip { flex: 1; height: 3px; border-radius: 99px; background: var(--border); }
+.mc-note { font-size: 14px; color: var(--txt); line-height: 1.55; }
+
+.rxn-row { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.rxn { display: flex; align-items: center; gap: 3px; padding: 4px 10px; border-radius: 99px; border: 1px solid var(--border2); background: var(--bg); font-size: 12px; font-weight: 500; color: var(--txt2); cursor: pointer; font-family: var(--font); transition: all .12s; }
+.rxn:hover { border-color: var(--p); color: var(--p); background: var(--p-dim); }
+.rxn.on    { border-color: var(--p); color: var(--p); background: var(--p-dim); }
+.rxn .rc   { font-weight: 700; }
+.nudge-btn { margin-left: auto; padding: 4px 10px; border-radius: 99px; border: 1px solid var(--border2); background: transparent; font-size: 12px; color: var(--txt3); cursor: pointer; font-family: var(--font); transition: all .12s; }
+.nudge-btn:hover { border-color: #F97316; color: #F97316; }
+.nudge-btn.sent  { color: #F97316; border-color: #FED7AA; background: #FFF7ED; }
+
+.empty-feed { display: flex; flex-direction: column; align-items: center; padding: 40px 20px; gap: 8px; text-align: center; }
+.empty-feed .icon { font-size: 40px; }
+.empty-feed h3 { font-size: 16px; font-weight: 600; }
+.empty-feed p  { font-size: 14px; color: var(--txt2); }
+
+.feed-loading { display: flex; justify-content: center; padding: 32px 0; }
+
+/* ════ HISTORY ════ */
+.hist-scroll { flex: 1; overflow-y: auto; padding: 12px 14px 96px; display: flex; flex-direction: column; gap: 12px; }
+.hist-scroll::-webkit-scrollbar { display: none; }
+.period-row { display: flex; gap: 6px; }
+.p-tab { padding: 6px 14px; border-radius: 99px; border: 1px solid var(--border2); background: var(--white); color: var(--txt2); font-size: 13px; font-weight: 500; cursor: pointer; font-family: var(--font); }
+.p-tab.on { background: var(--p); border-color: var(--p); color: #fff; }
+.chart-wrap { background: var(--white); border: 1px solid var(--border); border-radius: var(--r); padding: 16px; }
+.chart-wrap h3 { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+.chart-wrap p  { font-size: 12px; color: var(--txt2); margin-bottom: 14px; }
+.bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 80px; }
+.bc { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.bv { font-size: 10px; font-weight: 700; color: var(--txt2); }
+.bb { width: 100%; border-radius: 4px 4px 2px 2px; min-height: 4px; }
+.bl { font-size: 10px; color: var(--txt3); }
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stat-tile { padding: 14px; background: var(--white); border: 1px solid var(--border); border-radius: var(--r); }
+.stat-val { font-size: 28px; font-weight: 800; letter-spacing: -1px; margin-bottom: 2px; }
+.stat-lbl { font-size: 12px; color: var(--txt2); }
+
+/* ════ STREAK ════ */
+.streak-scroll { flex: 1; overflow-y: auto; padding: 12px 14px 96px; display: flex; flex-direction: column; gap: 12px; }
+.streak-hero { background: #FFF7ED; border: 1px solid #FED7AA; border-radius: var(--r3); padding: 28px 20px; text-align: center; }
+.sh-flame { font-size: 48px; display: block; margin-bottom: 8px; }
+.sh-num   { font-size: 64px; font-weight: 900; letter-spacing: -3px; color: #EA580C; line-height: 1; }
+.sh-unit  { font-size: 14px; font-weight: 600; color: #C2410C; margin-bottom: 6px; }
+.sh-msg   { font-size: 13px; color: #9A3412; }
+.cal-section { background: var(--white); border: 1px solid var(--border); border-radius: var(--r); padding: 16px; }
+.cal-section h3 { font-size: 13px; font-weight: 600; color: var(--txt2); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 12px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; }
+.cdl { font-size: 10px; color: var(--txt3); text-align: center; font-weight: 500; padding-bottom: 2px; }
+.cd  { aspect-ratio: 1; border-radius: 5px; }
+.cd.e { background: var(--bg); }
+.cd.y { background: #FB923C; }
+.cd.n { background: var(--bg); opacity: .35; }
+
+/* ════ PROFILE ════ */
+.profile-scroll { flex: 1; overflow-y: auto; padding: 12px 14px 96px; display: flex; flex-direction: column; gap: 10px; }
+.p-hero { background: var(--white); border: 1px solid var(--border); border-radius: var(--r); padding: 24px 16px; display: flex; flex-direction: column; align-items: center; }
+.p-av   { width: 68px; height: 68px; border-radius: 18px; background: var(--p); display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 12px; }
+.p-name  { font-size: 18px; font-weight: 700; margin-bottom: 3px; }
+.p-phone { font-size: 13px; color: var(--txt2); margin-bottom: 10px; }
+.prem-tag { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 99px; background: #FEF3C7; border: 1px solid #FCD34D; font-size: 12px; font-weight: 600; color: #92400E; }
+.free-tag { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 99px; background: var(--bg); border: 1px solid var(--border); font-size: 12px; font-weight: 600; color: var(--txt2); }
+.menu { display: flex; flex-direction: column; gap: 2px; }
+.mi { display: flex; align-items: center; gap: 11px; padding: 13px 14px; background: var(--white); border: 1px solid var(--border); border-radius: var(--r2); cursor: pointer; }
+.mi-icon { font-size: 18px; width: 22px; text-align: center; flex-shrink: 0; }
+.mi-text { flex: 1; font-size: 14px; font-weight: 500; }
+.mi-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 99px; background: var(--p); color: #fff; }
+.mi-arr  { color: var(--txt3); width: 14px; height: 14px; }
+
+/* ════ POST SHEET ════ */
+.sheet-bg { position: absolute; inset: 0; z-index: 60; background: rgba(0,0,0,.35); display: flex; align-items: flex-end; opacity: 0; pointer-events: none; transition: opacity .22s; }
+.sheet-bg.open { opacity: 1; pointer-events: all; }
+.sheet { width: 100%; padding: 0 16px 36px; background: var(--white); border-radius: 20px 20px 0 0; border-top: 1px solid var(--border); transform: translateY(100%); transition: transform .26s cubic-bezier(.4,0,.2,1); }
+.sheet-bg.open .sheet { transform: translateY(0); }
+.sh-handle { width: 36px; height: 4px; border-radius: 99px; background: var(--border2); margin: 12px auto 18px; }
+.sh-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+.sh-sub   { font-size: 13px; color: var(--txt2); margin-bottom: 18px; }
+.mood-opts { display: flex; gap: 6px; margin-bottom: 16px; }
+.m-opt { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 12px 4px; border: 1px solid var(--border2); border-radius: var(--r2); background: var(--bg); cursor: pointer; transition: all .12s; }
+.m-opt:hover { border-color: var(--p); background: var(--p-dim); }
+.m-opt.sel   { border-color: var(--p); background: var(--p-dim); }
+.m-opt .em   { font-size: 22px; }
+.m-opt .lb   { font-size: 10px; font-weight: 600; color: var(--txt2); }
+.note-ta { width: 100%; padding: 11px 12px; resize: none; background: var(--bg); border: 1px solid var(--border2); border-radius: var(--r2); color: var(--txt); font-size: 14px; line-height: 1.55; outline: none; margin-bottom: 10px; transition: border-color .15s; }
+.note-ta:focus { border-color: var(--p); }
+.note-ta::placeholder { color: var(--txt3); }
+.tgl-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-top: 1px solid var(--border); }
+.tgl-lbl { font-size: 14px; color: var(--txt2); display: flex; align-items: center; gap: 6px; }
+.tgl { width: 40px; height: 22px; border-radius: 99px; background: var(--border2); position: relative; cursor: pointer; transition: background .15s; flex-shrink: 0; }
+.tgl::after { content: ''; position: absolute; width: 16px; height: 16px; border-radius: 50%; background: #fff; top: 3px; left: 3px; transition: transform .15s; }
+.tgl.on { background: var(--p); }
+.tgl.on::after { transform: translateX(18px); }
+
+/* ════ PROFILE SETUP ════ */
+#s-profile-setup { background: var(--white); justify-content: flex-start; overflow-y: auto; padding: 48px 24px 40px; }
+.ps-title { font-size: 26px; font-weight: 800; margin-bottom: 6px; }
+.ps-sub   { font-size: 15px; color: var(--txt2); margin-bottom: 32px; }
+.ps-av-preview { width: 80px; height: 80px; border-radius: 22px; background: var(--p-dim); border: 2px solid var(--p); display: flex; align-items: center; justify-content: center; font-size: 42px; margin: 0 auto 16px; }
+.ps-av-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 24px; }
+.ps-av-opt { height: 44px; border-radius: var(--r2); border: 1.5px solid var(--border2); background: var(--bg); font-size: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: border-color .12s, background .12s; }
+.ps-av-opt.sel { border-color: var(--p); background: var(--p-dim); }
+.ps-form { display: flex; flex-direction: column; gap: 14px; }
+.ps-uname-row { display: flex; align-items: center; }
+.ps-uname-pre { padding: 11px 12px; background: var(--bg); border: 1px solid var(--border2); border-right: none; border-radius: var(--r2) 0 0 var(--r2); font-size: 15px; color: var(--txt2); font-weight: 600; }
+.ps-uname-input { flex: 1; padding: 11px 13px; background: var(--white); border: 1px solid var(--border2); border-radius: 0 var(--r2) var(--r2) 0; color: var(--txt); font-size: 15px; outline: none; transition: border-color .15s; }
+.ps-uname-input:focus { border-color: var(--p); }
+.ps-skip { text-align: center; font-size: 13px; color: var(--txt3); margin-top: 8px; }
+.ps-skip button { background: none; border: none; color: var(--p); font-size: 13px; cursor: pointer; font-family: var(--font); font-weight: 500; }
+
+/* avatar update — larger emoji support on profile */
+.p-av { font-size: 36px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ════ LOADING ════ -->
+<div id="s-loading" class="screen">
+  <div class="spinner spinner-lg"></div>
+  <p>Loading MoodCircle…</p>
+</div>
+
+<!-- ════ AUTH ════ -->
+<div id="s-auth" class="screen">
+  <div class="auth-logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 26 26" fill="none">
+        <circle cx="13" cy="13" r="4.5" fill="white" opacity=".95"/>
+        <circle cx="5"  cy="7"  r="2.5" fill="white" opacity=".6"/>
+        <circle cx="21" cy="7"  r="2.5" fill="white" opacity=".6"/>
+        <circle cx="5"  cy="19" r="2.5" fill="white" opacity=".6"/>
+        <circle cx="21" cy="19" r="2.5" fill="white" opacity=".6"/>
+      </svg>
+    </div>
+    <h1>MoodCircle</h1>
+    <p>See how your circle is really feeling.</p>
+  </div>
+  <div class="auth-form">
+    <div class="field">
+      <label>Email address</label>
+      <input id="auth-identifier" class="input" type="email" placeholder="you@example.com" autocomplete="email"/>
+    </div>
+    <button id="auth-btn" class="btn btn-primary btn-full" onclick="doRequestOTP()">Continue</button>
+    <div class="auth-note">We'll email you a one-time code. No passwords.</div>
+  </div>
+  <div id="recaptcha-container"></div>
+</div>
+
+<!-- ════ OTP ════ -->
+<div id="s-otp" class="screen" style="background:var(--white);justify-content:center;padding:40px 24px;">
+  <button class="icon-btn" onclick="go('s-auth')" style="position:absolute;top:20px;left:20px;">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 2L4 7l5 5"/></svg>
+  </button>
+  <div class="otp-header">
+    <h2>Enter OTP</h2>
+    <p>Sent to <strong id="otp-phone-display">…</strong></p>
+  </div>
+  <div class="otp-row">
+    <input class="otp-d" maxlength="1" type="tel"/>
+    <input class="otp-d" maxlength="1" type="tel"/>
+    <input class="otp-d" maxlength="1" type="tel"/>
+    <input class="otp-d" maxlength="1" type="tel"/>
+    <input class="otp-d" maxlength="1" type="tel"/>
+    <input class="otp-d" maxlength="1" type="tel"/>
+  </div>
+  <button id="otp-btn" class="btn btn-primary btn-full" onclick="doVerifyOTP()">Verify</button>
+  <div class="resend">Didn't get it? <button onclick="doResendOTP()">Resend</button></div>
+</div>
+
+<!-- ════ PROFILE SETUP ════ -->
+<div id="s-profile-setup" class="screen">
+  <div class="ps-title">Set up your profile</div>
+  <div class="ps-sub">Your friends will see this in the mood feed.</div>
+
+  <div class="ps-av-preview" id="ps-av-preview">😊</div>
+  <div class="ps-av-grid" id="ps-av-grid">
+    <!-- filled by JS -->
+  </div>
+
+  <div class="ps-form">
+    <div class="field">
+      <label>Display name</label>
+      <input id="ps-name" class="input" type="text" placeholder="e.g. Alex" maxlength="40"/>
+    </div>
+    <div class="field">
+      <label>Username</label>
+      <div class="ps-uname-row">
+        <span class="ps-uname-pre">@</span>
+        <input id="ps-username" class="ps-uname-input" type="text" placeholder="yourname" maxlength="20" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9_]/g,'')"/>
+      </div>
+    </div>
+    <button id="ps-btn" class="btn btn-primary btn-full" onclick="doSaveProfile()">Continue</button>
+    <div class="ps-skip"><button onclick="skipProfile()">Skip for now</button></div>
+  </div>
+</div>
+
+<!-- ════ SETUP (no groups) ════ -->
+<div id="s-setup" class="screen">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="logo-icon" style="width:28px;height:28px;border-radius:8px;">
+        <svg viewBox="0 0 26 26" fill="none" style="width:16px;height:16px;">
+          <circle cx="13" cy="13" r="4.5" fill="white" opacity=".95"/>
+          <circle cx="5" cy="7" r="2.5" fill="white" opacity=".6"/>
+          <circle cx="21" cy="7" r="2.5" fill="white" opacity=".6"/>
+          <circle cx="5" cy="19" r="2.5" fill="white" opacity=".6"/>
+          <circle cx="21" cy="19" r="2.5" fill="white" opacity=".6"/>
+        </svg>
+      </div>
+      <span class="topbar-title">MoodCircle</span>
+    </div>
+    <button class="icon-btn" onclick="logout()" title="Sign out">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+    </button>
+  </div>
+  <div class="setup-scroll">
+    <div class="setup-hero">
+      <div style="font-size:48px;margin-bottom:12px;">🫂</div>
+      <h2>You're not in any groups yet</h2>
+      <p>Create a group for your friends, or join one with an invite code.</p>
+    </div>
+
+    <div class="setup-card">
+      <h3>Create a group</h3>
+      <p>Give your group a name and share the invite code with friends.</p>
+      <div class="field">
+        <label>Group name</label>
+        <input id="create-name" class="input" type="text" placeholder="e.g. Close Crew" maxlength="60"/>
+      </div>
+      <button id="create-btn" class="btn btn-primary btn-full" onclick="doCreateGroup()">Create Group</button>
+    </div>
+
+    <div class="divider-or">or</div>
+
+    <div class="setup-card">
+      <h3>Join with invite code</h3>
+      <p>Got a 6-character code from a friend? Enter it below.</p>
+      <div class="field">
+        <label>Invite code</label>
+        <input id="join-code" class="input" type="text" placeholder="e.g. A3F9C1" maxlength="6" style="text-transform:uppercase;letter-spacing:3px;font-weight:700;"/>
+      </div>
+      <button id="join-btn" class="btn btn-outline btn-full" onclick="doJoinGroup()">Join Group</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ FEED ════ -->
+<div id="s-feed" class="screen">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div id="feed-group-icon" style="width:30px;height:30px;border-radius:8px;background:var(--p);display:flex;align-items:center;justify-content:center;font-size:14px;">🫂</div>
+      <div>
+        <div class="topbar-title" id="feed-group-name">Loading…</div>
+        <div style="font-size:11px;color:var(--txt3)" id="feed-group-meta"></div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <button class="icon-btn" onclick="loadFeed()" title="Refresh">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="feed-scroll" id="feed-scroll">
+    <div class="feed-loading"><div class="spinner"></div></div>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-item on" onclick="navTo('s-feed')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>Home</span>
+    </button>
+    <button class="nav-item" onclick="navTo('s-hist')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span>History</span>
+    </button>
+    <button class="nav-fab" onclick="openSheet()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+    <button class="nav-item" onclick="navTo('s-streak')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      <span>Streak</span>
+    </button>
+    <button class="nav-item" onclick="navTo('s-profile')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>Me</span>
+    </button>
+  </nav>
+</div>
+
+<!-- ════ HISTORY ════ -->
+<div id="s-hist" class="screen">
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="icon-btn" onclick="navTo('s-feed')">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 2L4 7l5 5"/></svg>
+      </button>
+      <span class="topbar-title">History</span>
+    </div>
+  </div>
+  <div class="hist-scroll" id="hist-scroll">
+    <div class="feed-loading"><div class="spinner"></div></div>
+  </div>
+  <nav class="bottom-nav">
+    <button class="nav-item" onclick="navTo('s-feed')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>Home</span>
+    </button>
+    <button class="nav-item on">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span>History</span>
+    </button>
+    <button class="nav-fab" onclick="openSheet()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+    <button class="nav-item" onclick="navTo('s-streak')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      <span>Streak</span>
+    </button>
+    <button class="nav-item" onclick="navTo('s-profile')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>Me</span>
+    </button>
+  </nav>
+</div>
+
+<!-- ════ STREAK ════ -->
+<div id="s-streak" class="screen">
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="icon-btn" onclick="navTo('s-feed')">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 2L4 7l5 5"/></svg>
+      </button>
+      <span class="topbar-title">Streak</span>
+    </div>
+  </div>
+  <div class="streak-scroll" id="streak-scroll">
+    <div class="feed-loading"><div class="spinner"></div></div>
+  </div>
+  <nav class="bottom-nav">
+    <button class="nav-item" onclick="navTo('s-feed')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>Home</span>
+    </button>
+    <button class="nav-item" onclick="navTo('s-hist')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span>History</span>
+    </button>
+    <button class="nav-fab" onclick="openSheet()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+    <button class="nav-item on">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      <span>Streak</span>
+    </button>
+    <button class="nav-item" onclick="navTo('s-profile')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>Me</span>
+    </button>
+  </nav>
+</div>
+
+<!-- ════ PROFILE ════ -->
+<div id="s-profile" class="screen">
+  <div class="topbar">
+    <div class="topbar-left"><span class="topbar-title">Profile</span></div>
+    <button class="icon-btn" onclick="logout()" title="Sign out">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+    </button>
+  </div>
+  <div class="profile-scroll">
+    <div class="p-hero">
+      <div class="p-av" id="p-av">?</div>
+      <div class="p-name" id="p-name">—</div>
+      <div class="p-phone" id="p-phone">—</div>
+      <div id="p-prem"></div>
+    </div>
+    <div class="menu">
+      <div class="mi" onclick="openEditProfile()">
+        <span class="mi-icon">✏️</span><span class="mi-text">Edit Profile</span>
+        <svg class="mi-arr" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 2l5 5-5 5"/></svg>
+      </div>
+      <div class="mi" onclick="showGroupInvite()">
+        <span class="mi-icon">🔗</span><span class="mi-text" id="mi-group-name">My Group</span>
+        <span id="mi-invite-code" style="font-size:12px;font-weight:700;color:var(--p);letter-spacing:2px;margin-right:4px;"></span>
+        <svg class="mi-arr" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 2l5 5-5 5"/></svg>
+      </div>
+      <div class="mi" onclick="navTo('s-streak')">
+        <span class="mi-icon">🔥</span><span class="mi-text">My Streak</span>
+        <svg class="mi-arr" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 2l5 5-5 5"/></svg>
+      </div>
+      <div class="mi" onclick="toast('Premium mode — coming soon 🔒','err')">
+        <span class="mi-icon">🔒</span><span class="mi-text">Private Mood Space</span>
+        <span class="mi-badge">PREMIUM</span>
+        <svg class="mi-arr" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 2l5 5-5 5"/></svg>
+      </div>
+      <div class="mi" onclick="navTo('s-setup')">
+        <span class="mi-icon">➕</span><span class="mi-text">Create or Join Another Group</span>
+        <svg class="mi-arr" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 2l5 5-5 5"/></svg>
+      </div>
+      <div class="mi" onclick="logout()">
+        <span class="mi-icon">🚪</span><span class="mi-text" style="color:#EF4444">Sign Out</span>
+        <svg class="mi-arr" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 2l5 5-5 5"/></svg>
+      </div>
+    </div>
+  </div>
+  <nav class="bottom-nav">
+    <button class="nav-item" onclick="navTo('s-feed')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>Home</span>
+    </button>
+    <button class="nav-item" onclick="navTo('s-hist')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span>History</span>
+    </button>
+    <button class="nav-fab" onclick="openSheet()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+    <button class="nav-item" onclick="navTo('s-streak')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      <span>Streak</span>
+    </button>
+    <button class="nav-item on">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>Me</span>
+    </button>
+  </nav>
+</div>
+
+<!-- ════ POST MOOD SHEET ════ -->
+<div class="sheet-bg" id="sheet-bg" onclick="closeSheetBg(event)">
+  <div class="sheet">
+    <div class="sh-handle"></div>
+    <div class="sh-title">How are you feeling?</div>
+    <div class="sh-sub" id="sh-sub">Your group · today</div>
+    <div class="mood-opts">
+      <div class="m-opt" onclick="pick(1,this)"><span class="em">😞</span><span class="lb">Rough</span></div>
+      <div class="m-opt" onclick="pick(2,this)"><span class="em">😕</span><span class="lb">Low</span></div>
+      <div class="m-opt" onclick="pick(3,this)"><span class="em">😌</span><span class="lb">Okay</span></div>
+      <div class="m-opt" onclick="pick(4,this)"><span class="em">😊</span><span class="lb">Good</span></div>
+      <div class="m-opt" onclick="pick(5,this)"><span class="em">🌟</span><span class="lb">Great</span></div>
+    </div>
+    <textarea class="note-ta" rows="3" id="mood-note" placeholder="Add a note (optional)"></textarea>
+    <div class="tgl-row">
+      <span class="tgl-lbl">🎭 Post anonymously</span>
+      <div class="tgl" id="tgl-anon" onclick="this.classList.toggle('on')"></div>
+    </div>
+    <div class="tgl-row" style="border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:14px">
+      <span class="tgl-lbl">🔒 Private note (only you see it)</span>
+      <div class="tgl" id="tgl-priv" onclick="togglePriv()"></div>
+    </div>
+    <textarea class="note-ta" rows="2" id="priv-note" placeholder="Private note…" style="display:none"></textarea>
+    <button id="post-btn" class="btn btn-primary btn-full" onclick="doPostMood()">Post to circle</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+</div><!-- #app -->
+
+<script>
+// ─────────────────────────────────────────────
+// Constants
+// ─────────────────────────────────────────────
+const MOOD_EMOJI  = ['','😞','😕','😌','😊','🌟'];
+const MOOD_LABEL  = ['','Rough','Low','Okay','Good','Great'];
+const MOOD_COLOR  = ['','#EF4444','#F97316','#EAB308','#22C55E','#6C47FF'];
+const MOOD_BG     = ['','#FEF2F2','#FFF7ED','#FEFCE8','#F0FDF4','#EDE9FF'];
+const MOOD_TEXT   = ['','#EF4444','#F97316','#A16207','#15803D','#6C47FF'];
+const AV_COLORS   = ['#7C3AED','#0891B2','#059669','#D97706','#BE185D','#0284C7','#DC2626','#7C3AED'];
+
+const RXN_MAP = [
+  { key: 'sending_love',    emoji: '❤️'  },
+  { key: 'same',            emoji: '🤝'  },
+  { key: 'rooting_for_you', emoji: '🙌'  },
+];
+
+// ─────────────────────────────────────────────
+// State
+// ─────────────────────────────────────────────
+const state = {
+  token:         localStorage.getItem('mc_token'),
+  user:          JSON.parse(localStorage.getItem('mc_user')  || 'null'),
+  activeGroupId: localStorage.getItem('mc_group_id'),
+  activeGroup:   null,
+  feed:          [],
+  myReactions:   {},   // `${moodId}__${type}` → reactionId
+  streak:        null,
+  checkedInToday: false,
+  histDays:      7,
+};
+
+// ─────────────────────────────────────────────
+// API helper
+// ─────────────────────────────────────────────
+async function api(method, path, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (state.token) opts.headers['Authorization'] = 'Bearer ' + state.token;
+  if (body) opts.body = JSON.stringify(body);
+  const res  = await fetch('/api' + path, opts);
+  const json = await res.json();
+  if (res.status === 401) { logout(); throw json; }
+  if (!json.success) throw json;
+  return json.data;
+}
+
+// ─────────────────────────────────────────────
+// Navigation
+// ─────────────────────────────────────────────
+let curScreen = null;
+
+function go(id) {
+  const prev = curScreen ? document.getElementById(curScreen) : null;
+  const next = document.getElementById(id);
+  if (!next || id === curScreen) return;
+  if (prev) prev.classList.remove('active');
+  next.classList.add('active');
+  curScreen = id;
+}
+
+function navTo(id) {
+  go(id);
+  if (id === 's-hist')    loadHistory(state.histDays);
+  if (id === 's-streak')  loadStreak();
+  if (id === 's-profile') renderProfile();
+  if (id === 's-feed')    loadFeed();
+}
+
+// ─────────────────────────────────────────────
+// Boot
+// ─────────────────────────────────────────────
+async function boot() {
+  // Always start from a blank slate — no screen should be active yet
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  curScreen = null;
+
+  if (!state.token) { go('s-auth'); return; }
+
+  // First-time users need to set up their profile
+  if (!state.user?.name) { go('s-profile-setup'); initProfileSetup(); return; }
+
+  go('s-loading');
+  try {
+    const { groups } = await api('GET', '/groups');
+    // api() calls logout() on 401, so we only reach here with a valid session
+    if (!groups.length) { go('s-setup'); return; }
+    const g = groups.find(g => g.id === state.activeGroupId) || groups[0];
+    state.activeGroup   = g;
+    state.activeGroupId = g.id;
+    localStorage.setItem('mc_group_id', g.id);
+    await loadFeed();
+    go('s-feed');
+  } catch(e) {
+    // api() already navigated to auth on 401; guard against any other error
+    if (curScreen !== 's-auth') go('s-auth');
+  }
+}
+
+// ─────────────────────────────────────────────
+// Auth
+// ─────────────────────────────────────────────
+let pendingPhone = '';
+
+// ─────────────────────────────────────────────
+// Profile Setup
+// ─────────────────────────────────────────────
+const AVATARS = ['😊','😄','😎','🤗','🥳','😴','🤔','😇','🤩','😜','🥸','🧐','👻','🦊','🐼','🌟','🎯','🚀'];
+let chosenAvatar = AVATARS[0];
+
+function initProfileSetup() {
+  chosenAvatar = state.user?.avatar || AVATARS[0];
+  document.getElementById('ps-av-preview').textContent = chosenAvatar;
+  document.getElementById('ps-name').value = state.user?.name || '';
+  document.getElementById('ps-username').value = state.user?.username || '';
+
+  const grid = document.getElementById('ps-av-grid');
+  grid.innerHTML = AVATARS.map(e =>
+    `<div class="ps-av-opt${e === chosenAvatar ? ' sel' : ''}" onclick="pickAvatar('${e}',this)">${e}</div>`
+  ).join('');
+}
+
+function pickAvatar(emoji, el) {
+  chosenAvatar = emoji;
+  document.getElementById('ps-av-preview').textContent = emoji;
+  document.querySelectorAll('.ps-av-opt').forEach(d => d.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+async function doSaveProfile() {
+  const name     = document.getElementById('ps-name').value.trim();
+  const username = document.getElementById('ps-username').value.trim();
+  if (!name)     { toast('Enter your display name', 'err'); return; }
+  if (username && username.length < 3) { toast('Username must be at least 3 characters', 'err'); return; }
+
+  setLoading('ps-btn', true);
+  try {
+    const { user } = await api('PATCH', '/profile', { name, username: username || undefined, avatar: chosenAvatar });
+    state.user = { ...state.user, ...user };
+    localStorage.setItem('mc_user', JSON.stringify(state.user));
+    await continueAfterProfile();
+  } catch(e) {
+    toast(e.message || 'Failed to save profile', 'err');
+  } finally {
+    setLoading('ps-btn', false);
+  }
+}
+
+async function skipProfile() {
+  await continueAfterProfile();
+}
+
+async function continueAfterProfile() {
+  go('s-loading');
+  try {
+    const { groups } = await api('GET', '/groups');
+    if (!groups.length) { go('s-setup'); return; }
+    const g = groups.find(g => g.id === state.activeGroupId) || groups[0];
+    state.activeGroup   = g;
+    state.activeGroupId = g.id;
+    localStorage.setItem('mc_group_id', g.id);
+    await loadFeed();
+    go('s-feed');
+  } catch(e) {
+    if (curScreen !== 's-auth') go('s-auth');
+  }
+}
+
+// ─────────────────────────────────────────────
+// Auth — Email OTP
+// ─────────────────────────────────────────────
+async function doRequestOTP() {
+  const email = document.getElementById('auth-identifier').value.trim().toLowerCase();
+  if (!email || !email.includes('@')) { toast('Enter a valid email address', 'err'); return; }
+  setLoading('auth-btn', true);
+  try {
+    const data = await api('POST', '/auth/otp/request', { email });
+    pendingPhone = email; // reuse pendingPhone var as pendingEmail
+    document.getElementById('otp-phone-display').textContent = email;
+    if (data.otp) { // dev mode auto-fill
+      const boxes = document.querySelectorAll('.otp-d');
+      data.otp.split('').forEach((d, i) => { boxes[i].value = d; boxes[i].classList.add('v'); });
+    }
+    go('s-otp');
+  } catch(e) {
+    toast(e.message || 'Failed to send OTP', 'err');
+  } finally {
+    setLoading('auth-btn', false);
+  }
+}
+
+async function doVerifyOTP() {
+  const otp = [...document.querySelectorAll('.otp-d')].map(d => d.value).join('');
+  if (otp.length < 6) { toast('Enter all 6 digits', 'err'); return; }
+  setLoading('otp-btn', true);
+  try {
+    const data = await api('POST', '/auth/otp/verify', { email: pendingPhone, otp });
+    state.token = data.token;
+    state.user  = data.user;
+    localStorage.setItem('mc_token', data.token);
+    localStorage.setItem('mc_user',  JSON.stringify(data.user));
+    document.querySelectorAll('.otp-d').forEach(d => { d.value = ''; d.classList.remove('v'); });
+    await boot();
+  } catch(e) {
+    toast(e.message || 'Invalid OTP', 'err');
+  } finally {
+    setLoading('otp-btn', false);
+  }
+}
+
+async function doResendOTP() {
+  if (!pendingPhone) return;
+  try {
+    const data = await api('POST', '/auth/otp/request', { email: pendingPhone });
+    if (data.otp) {
+      const boxes = document.querySelectorAll('.otp-d');
+      data.otp.split('').forEach((d,i) => { boxes[i].value=d; boxes[i].classList.add('v'); });
+    }
+    toast('New OTP sent');
+  } catch(e) { toast('Failed to resend', 'err'); }
+}
+
+function logout() {
+  // Clear persisted session
+  localStorage.removeItem('mc_token');
+  localStorage.removeItem('mc_user');
+  localStorage.removeItem('mc_group_id');
+
+  // Reset all state
+  state.token          = null;
+  state.user           = null;
+  state.activeGroup    = null;
+  state.activeGroupId  = null;
+  state.feed           = [];
+  state.myReactions    = {};
+  state.streak         = null;
+  state.checkedInToday = false;
+
+  // Close post sheet if open
+  document.getElementById('sheet-bg').classList.remove('open');
+
+  // Strip active/behind from every screen so none bleeds through
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.remove('active');
+  });
+  curScreen = null;
+
+  // Reset auth form
+  document.getElementById('auth-identifier').value = '';
+  document.querySelectorAll('.otp-d').forEach(d => { d.value = ''; d.classList.remove('v'); });
+  // Reset setup forms
+  document.getElementById('create-name').value = '';
+  document.getElementById('join-code').value = '';
+  document.getElementById('ps-name').value = '';
+  document.getElementById('ps-username').value = '';
+
+  // Reset feed / dynamic screens to loading placeholder so stale data
+  // never flashes if the user logs back in during the same session
+  document.getElementById('feed-scroll').innerHTML =
+    `<div class="feed-loading"><div class="spinner"></div></div>`;
+  document.getElementById('hist-scroll').innerHTML =
+    `<div class="feed-loading"><div class="spinner"></div></div>`;
+  document.getElementById('streak-scroll').innerHTML =
+    `<div class="feed-loading"><div class="spinner"></div></div>`;
+  document.getElementById('feed-group-name').textContent = 'Loading…';
+  document.getElementById('feed-group-meta').textContent = '';
+
+  // Land on auth
+  go('s-auth');
+}
+
+// OTP box keyboard wiring
+document.querySelectorAll('.otp-d').forEach((el, i, all) => {
+  el.addEventListener('input', () => {
+    el.classList.toggle('v', !!el.value);
+    if (el.value && i < 5) all[i+1].focus();
+  });
+  el.addEventListener('keydown', e => {
+    if (e.key === 'Backspace' && !el.value && i > 0) all[i-1].focus();
+  });
+});
+
+// ─────────────────────────────────────────────
+// Groups — setup screen
+// ─────────────────────────────────────────────
+async function doCreateGroup() {
+  const name = document.getElementById('create-name').value.trim();
+  if (!name) { toast('Enter a group name', 'err'); return; }
+  setLoading('create-btn', true);
+  try {
+    const data = await api('POST', '/groups', { name });
+    state.activeGroup   = data.group;
+    state.activeGroupId = data.group.id;
+    localStorage.setItem('mc_group_id', data.group.id);
+    toast(`"${data.group.name}" created! Invite code: ${data.group.inviteCode}`);
+    await loadFeed();
+    go('s-feed');
+  } catch(e) {
+    toast(e.message || 'Could not create group', 'err');
+  } finally {
+    setLoading('create-btn', false);
+  }
+}
+
+async function doJoinGroup() {
+  const code = document.getElementById('join-code').value.trim().toUpperCase();
+  if (code.length < 6) { toast('Enter the 6-character invite code', 'err'); return; }
+  setLoading('join-btn', true);
+  try {
+    const data = await api('POST', '/groups/join', { inviteCode: code });
+    state.activeGroup   = data.group;
+    state.activeGroupId = data.group.id;
+    localStorage.setItem('mc_group_id', data.group.id);
+    toast(`Joined "${data.group.name}"!`);
+    await loadFeed();
+    go('s-feed');
+  } catch(e) {
+    toast(e.message || 'Invalid invite code', 'err');
+  } finally {
+    setLoading('join-btn', false);
+  }
+}
+
+// ─────────────────────────────────────────────
+// Feed
+// ─────────────────────────────────────────────
+async function loadFeed() {
+  if (!state.activeGroupId) return;
+  const scroll = document.getElementById('feed-scroll');
+  scroll.innerHTML = `<div class="feed-loading"><div class="spinner"></div></div>`;
+
+  try {
+    const [feedData, streakData, groupData] = await Promise.all([
+      api('GET', `/groups/${state.activeGroupId}/moods/today`),
+      api('GET', '/streaks/me'),
+      api('GET', `/groups/${state.activeGroupId}`),
+    ]);
+
+    state.feed    = feedData.feed;
+    state.streak  = streakData.streak;
+    state.activeGroup = groupData.group;
+
+    // Build myReactions map from feed
+    state.myReactions = {};
+    for (const item of feedData.feed) {
+      for (const rxn of item.reactions) {
+        if (rxn.userId === state.user?.id) {
+          state.myReactions[`${item.id}__${rxn.type}`] = rxn.id;
+        }
+      }
+    }
+
+    state.checkedInToday = feedData.feed.some(m => m.isOwn);
+
+    // Update topbar
+    document.getElementById('feed-group-name').textContent = state.activeGroup.name;
+    document.getElementById('feed-group-meta').textContent =
+      `${state.activeGroup.memberCount} members · #${state.activeGroup.inviteCode}`;
+
+    renderFeed(feedData);
+  } catch(e) {
+    scroll.innerHTML = `
+      <div class="empty-feed">
+        <div class="icon">😵</div>
+        <h3>Couldn't load feed</h3>
+        <p>${e.message || 'Something went wrong'}</p>
+        <button class="btn btn-outline" style="margin-top:10px" onclick="loadFeed()">Retry</button>
+      </div>`;
+  }
+}
+
+function renderFeed({ feed, vibeScore, checkedIn, totalMembers } = {}) {
+  feed = feed || state.feed;
+  const scroll = document.getElementById('feed-scroll');
+  const parts  = [];
+
+  // Vibe row
+  const vibeText = vibeScore
+    ? `${vibeScore.toFixed(1)} / 5 — ${vibeLabel(vibeScore)}`
+    : 'No check-ins yet';
+
+  const memberDots = state.activeGroup
+    ? buildMemberDots(feed, totalMembers || state.activeGroup.memberCount)
+    : '';
+
+  parts.push(`
+    <div class="vibe-row">
+      <div>
+        <div class="vibe-score">${vibeScore ? vibeScore.toFixed(1) + ' / 5' : '—'}</div>
+        <div class="vibe-sub">${vibeScore ? vibeLabel(vibeScore) : 'No check-ins yet'}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="member-row" style="justify-content:flex-end">${memberDots}</div>
+        <div class="checkin-count">${checkedIn || 0} of ${totalMembers || '?'} checked in</div>
+      </div>
+    </div>
+  `);
+
+  // Streak
+  if (state.streak && state.streak.currentStreak > 0) {
+    const s = state.streak;
+    parts.push(`
+      <div class="streak-pill">
+        <span class="icon">🔥</span>
+        <div class="text">
+          <strong>${s.currentStreak}-day streak</strong>
+          <small>${s.lastCheckInDate === todayIST() ? 'Checked in today ✓' : 'Check in to keep it alive'}</small>
+        </div>
+        <span class="streak-count">${s.currentStreak}</span>
+      </div>`);
+  }
+
+  // Checkin CTA
+  if (!state.checkedInToday) {
+    parts.push(`
+      <div class="checkin-bar" id="checkin-bar">
+        <span class="icon">✦</span>
+        <div class="text">
+          <h3>How are you feeling?</h3>
+          <p>Your circle is waiting</p>
+        </div>
+        <button onclick="openSheet()">Check in</button>
+      </div>`);
+  }
+
+  // Mood cards
+  parts.push(`
+    <div class="sec-head">
+      <span>Today's moods</span>
+      <a onclick="navTo('s-hist')">History →</a>
+    </div>`);
+
+  if (!feed.length) {
+    parts.push(`
+      <div class="empty-feed">
+        <div class="icon">🌅</div>
+        <h3>No check-ins yet</h3>
+        <p>Be the first to share how you're feeling today.</p>
+      </div>`);
+  } else {
+    for (const item of feed) parts.push(moodCardHTML(item));
+  }
+
+  scroll.innerHTML = parts.join('');
+}
+
+function buildMemberDots(feed, total) {
+  const checkedUserIds = new Set(feed.filter(m => !m.isAnonymous && m.user?.id).map(m => m.user.id));
+  const checked = feed.length;
+  const pending = Math.max(0, total - checked);
+  let html = '';
+  let n = 0;
+  for (const item of feed) {
+    if (n >= 6) break;
+    const col = item.isAnonymous ? '#A1A1AA' : idColor(item.user?.id || '');
+    const lbl = item.isAnonymous ? '?' : phoneInitials(item.user?.phone);
+    html += `<div class="m-dot" style="background:${col}" title="${item.isAnonymous ? 'Anonymous' : (item.user?.phone||'')}">${lbl}</div>`;
+    n++;
+  }
+  for (let i = 0; i < Math.min(pending, 6-n); i++) {
+    html += `<div class="m-dot wait">·</div>`;
+  }
+  return html;
+}
+
+function moodCardHTML(item) {
+  const isAnon = item.isAnonymous;
+  const isOwn  = item.isOwn;
+  const level  = item.level;
+  const u      = item.user || {};
+  const col    = isAnon ? '#A1A1AA' : idColor(u.id || '');
+  const hasEmoji = !isAnon && u.avatar;
+  const initials = isAnon ? '👤' : (u.avatar || (u.name ? u.name[0].toUpperCase() : phoneInitials(u.phone)));
+  const displayName = isAnon ? 'Someone' : (u.name || (u.username ? '@' + u.username : (u.phone ? '···' + u.phone.slice(-4) : 'Unknown')));
+  const time   = new Date(item.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
+  const avStyle = isAnon
+    ? `class="av av-anon"`
+    : hasEmoji
+      ? `class="av" style="background:var(--p-dim);font-size:28px"`
+      : `class="av" style="background:${col}"`;
+
+  const nameTags = [
+    isAnon ? `<span class="anon-tag">anonymous</span>` : '',
+    isOwn  ? `<span class="you-tag">you</span>` : '',
+  ].join('');
+
+  // Pips
+  const pips = [1,2,3,4,5].map(i =>
+    `<div class="pip" style="${i<=level ? 'background:'+MOOD_COLOR[level] : ''}"></div>`
+  ).join('');
+
+  // Reactions
+  const rxnCounts = {};
+  for (const rxn of item.reactions) rxnCounts[rxn.type] = (rxnCounts[rxn.type]||0) + 1;
+
+  const rxnHTML = RXN_MAP.map(r => {
+    const count = rxnCounts[r.key] || 0;
+    const mine  = !!state.myReactions[`${item.id}__${r.key}`];
+    return `<button class="rxn${mine?' on':''}" onclick="toggleRxn('${item.id}','${r.key}',this)">${r.emoji} <span class="rc">${count}</span></button>`;
+  }).join('');
+
+  // Nudge (only for non-anonymous, non-self)
+  const nudgeHTML = (!isAnon && !isOwn && item.user?.id)
+    ? `<button class="nudge-btn" onclick="doNudge('${item.user.id}',this)">👋 Nudge</button>`
+    : '';
+
+  return `
+    <div class="mcard">
+      <div class="mcard-top">
+        <div ${avStyle}>${initials}</div>
+        <div class="mc-info">
+          <div class="mc-name">${displayName} ${nameTags}</div>
+          <div class="mc-time">${time}</div>
+        </div>
+        <div class="mood-chip" style="background:${MOOD_BG[level]};color:${MOOD_TEXT[level]}">
+          ${MOOD_EMOJI[level]} ${MOOD_LABEL[level]}
+        </div>
+      </div>
+      <div class="pips">${pips}</div>
+      ${item.note ? `<div class="mc-note">"${escHtml(item.note)}"</div>` : ''}
+      <div class="rxn-row">${rxnHTML}${nudgeHTML}</div>
+    </div>`;
+}
+
+// ─────────────────────────────────────────────
+// Reactions
+// ─────────────────────────────────────────────
+async function toggleRxn(moodId, type, btn) {
+  const key = `${moodId}__${type}`;
+  const rc  = btn.querySelector('.rc');
+  const isOn = !!state.myReactions[key];
+
+  if (isOn) {
+    // Remove
+    try {
+      await api('DELETE', `/moods/${moodId}/reactions/${state.myReactions[key]}`);
+      delete state.myReactions[key];
+      btn.classList.remove('on');
+      rc.textContent = Math.max(0, parseInt(rc.textContent) - 1);
+    } catch(e) { toast(e.message || 'Could not remove reaction', 'err'); }
+  } else {
+    // Add
+    try {
+      const data = await api('POST', `/moods/${moodId}/reactions`, { type });
+      state.myReactions[key] = data.reaction.id;
+      btn.classList.add('on');
+      rc.textContent = parseInt(rc.textContent) + 1;
+    } catch(e) { toast(e.message || 'Could not react', 'err'); }
+  }
+}
+
+// ─────────────────────────────────────────────
+// Nudge
+// ─────────────────────────────────────────────
+async function doNudge(targetUserId, btn) {
+  if (btn.classList.contains('sent')) { toast('Already nudged today'); return; }
+  try {
+    await api('POST', `/groups/${state.activeGroupId}/nudge`, { targetUserId });
+    btn.classList.add('sent');
+    btn.textContent = '✓ Nudged';
+    toast('Nudge sent 👋');
+  } catch(e) {
+    toast(e.message || 'Could not send nudge', 'err');
+  }
+}
+
+// ─────────────────────────────────────────────
+// Post Mood
+// ─────────────────────────────────────────────
+let chosenMood = null;
+
+function openSheet() {
+  if (!state.activeGroup) { toast('Join a group first', 'err'); return; }
+  document.getElementById('sh-sub').textContent = state.activeGroup.name + ' · today';
+  document.getElementById('sheet-bg').classList.add('open');
+}
+function closeSheetBg(e) {
+  if (e.target === document.getElementById('sheet-bg'))
+    document.getElementById('sheet-bg').classList.remove('open');
+}
+function pick(lvl, el) {
+  chosenMood = lvl;
+  document.querySelectorAll('.m-opt').forEach(o => o.classList.remove('sel'));
+  el.classList.add('sel');
+}
+function togglePriv() {
+  const t = document.getElementById('tgl-priv'); t.classList.toggle('on');
+  document.getElementById('priv-note').style.display = t.classList.contains('on') ? 'block' : 'none';
+}
+
+async function doPostMood() {
+  if (!chosenMood) { toast('Pick your mood first', 'err'); return; }
+  const note        = document.getElementById('mood-note').value.trim();
+  const privateNote = document.getElementById('priv-note').value.trim();
+  const isAnonymous = document.getElementById('tgl-anon').classList.contains('on');
+
+  setLoading('post-btn', true);
+  try {
+    await api('POST', `/groups/${state.activeGroupId}/moods`, {
+      level: chosenMood, note, privateNote, isAnonymous,
+    });
+    // Close sheet and reset
+    document.getElementById('sheet-bg').classList.remove('open');
+    chosenMood = null;
+    document.querySelectorAll('.m-opt').forEach(o => o.classList.remove('sel'));
+    document.getElementById('mood-note').value = '';
+    document.getElementById('priv-note').value = '';
+    document.getElementById('tgl-anon').classList.remove('on');
+    document.getElementById('tgl-priv').classList.remove('on');
+    document.getElementById('priv-note').style.display = 'none';
+    toast('Mood posted ✓');
+    await loadFeed(); // Reload with fresh data
+  } catch(e) {
+    toast(e.message || 'Could not post mood', 'err');
+  } finally {
+    setLoading('post-btn', false);
+  }
+}
+
+// ─────────────────────────────────────────────
+// History
+// ─────────────────────────────────────────────
+async function loadHistory(days = 7) {
+  state.histDays = days;
+  const scroll = document.getElementById('hist-scroll');
+  scroll.innerHTML = `<div class="feed-loading"><div class="spinner"></div></div>`;
+
+  try {
+    const [histData, streakData] = await Promise.all([
+      api('GET', `/groups/${state.activeGroupId}/moods/history?days=${days}`),
+      api('GET', '/streaks/me'),
+    ]);
+    const history = histData.history;
+    const streak  = streakData.streak;
+
+    // Build daily averages for chart
+    const daily = buildDailyData(history, days);
+    const labels = daily.map(d => shortDay(d.date));
+    const vals   = daily.map(d => d.avg);
+    const daysCheckedIn = daily.filter(d => d.avg > 0).length;
+    const avgMood = vals.filter(v=>v>0).length
+      ? (vals.filter(v=>v>0).reduce((a,b)=>a+b,0) / vals.filter(v=>v>0).length).toFixed(1)
+      : '—';
+
+    const tabsHTML = [7,30,90].map(d =>
+      `<button class="p-tab${d===days?' on':''}" onclick="loadHistory(${d})">${d} days</button>`
+    ).join('');
+
+    scroll.innerHTML = `
+      <div class="period-row">${tabsHTML}</div>
+      <div class="chart-wrap">
+        <h3>Your mood</h3>
+        <p>Daily average over ${days} days</p>
+        <div class="bar-chart" id="hist-chart"></div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-tile"><div class="stat-val" style="color:var(--p)">${avgMood}</div><div class="stat-lbl">Avg mood (${days}d)</div></div>
+        <div class="stat-tile"><div class="stat-val" style="color:#DB2777">${daysCheckedIn}</div><div class="stat-lbl">Days checked in</div></div>
+        <div class="stat-tile"><div class="stat-val" style="color:#22C55E">${streak.currentStreak}</div><div class="stat-lbl">Current streak</div></div>
+        <div class="stat-tile"><div class="stat-val" style="color:#F59E0B">${history.length}</div><div class="stat-lbl">Total check-ins</div></div>
+      </div>`;
+
+    buildBarChart('hist-chart', labels, vals);
+  } catch(e) {
+    scroll.innerHTML = `<div class="empty-feed"><div class="icon">😵</div><h3>Couldn't load history</h3><p>${e.message||''}</p></div>`;
+  }
+}
+
+function buildDailyData(history, days) {
+  const byDay = {};
+  for (const m of history) {
+    if (!byDay[m.date]) byDay[m.date] = [];
+    byDay[m.date].push(m.level);
+  }
+  const result = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const date = daysAgoIST(i);
+    const entries = byDay[date] || [];
+    const avg = entries.length
+      ? parseFloat((entries.reduce((a,b)=>a+b,0)/entries.length).toFixed(1))
+      : 0;
+    result.push({ date, avg, count: entries.length });
+  }
+  return result;
+}
+
+function buildBarChart(id, labels, vals) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = labels.map((l,i) => {
+    const v   = vals[i];
+    const pct = Math.round(v/5*100);
+    const col = v > 0 ? MOOD_COLOR[Math.round(v)] : 'var(--border)';
+    return `<div class="bc">
+      <div class="bv">${v||''}</div>
+      <div class="bb" style="height:${Math.max(pct,4)}%;background:${col}"></div>
+      <div class="bl">${l}</div>
+    </div>`;
+  }).join('');
+}
+
+// ─────────────────────────────────────────────
+// Streak
+// ─────────────────────────────────────────────
+async function loadStreak() {
+  const scroll = document.getElementById('streak-scroll');
+  scroll.innerHTML = `<div class="feed-loading"><div class="spinner"></div></div>`;
+  try {
+    const data = await api('GET', '/streaks/me');
+    const s = data.streak;
+    const cal = buildCalHTML(s);
+    scroll.innerHTML = `
+      <div class="streak-hero">
+        <span class="sh-flame">🔥</span>
+        <div class="sh-num">${s.currentStreak}</div>
+        <div class="sh-unit">day streak</div>
+        <div class="sh-msg">${s.currentStreak > 0
+          ? (s.lastCheckInDate === todayIST() ? 'Checked in today ✓' : 'Check in today to keep it going!')
+          : 'Post your first mood to start your streak!'}</div>
+      </div>
+      <div class="cal-section">
+        <h3>Last 28 days</h3>
+        <div class="cal-grid">${cal}</div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-tile"><div class="stat-val" style="color:#EA580C">${s.currentStreak}</div><div class="stat-lbl">Current streak</div></div>
+        <div class="stat-tile"><div class="stat-val" style="color:#D97706">${s.currentStreak}</div><div class="stat-lbl">Best streak</div></div>
+      </div>`;
+  } catch(e) {
+    scroll.innerHTML = `<div class="empty-feed"><div class="icon">😵</div><h3>Couldn't load streak</h3></div>`;
+  }
+}
+
+function buildCalHTML(streak) {
+  const dLabels = ['S','M','T','W','T','F','S'];
+  const labels = dLabels.map(d => `<div class="cdl">${d}</div>`).join('');
+  const today = todayIST();
+  const last  = streak.lastCheckInDate;
+  const dots  = Array(28).fill(0).map((_, i) => {
+    const date = daysAgoIST(27 - i);
+    if (!last || date > last) return `<div class="cd e"></div>`;
+    // Simple heuristic: mark as checked if within streak window
+    const daysFromLast = daysDiff(date, last);
+    if (daysFromLast < streak.currentStreak && daysFromLast >= 0) return `<div class="cd y"></div>`;
+    return `<div class="cd n"></div>`;
+  }).join('');
+  return labels + dots;
+}
+
+// ─────────────────────────────────────────────
+// Profile
+// ─────────────────────────────────────────────
+function renderProfile() {
+  const user = state.user;
+  if (!user) return;
+
+  const av = document.getElementById('p-av');
+  if (user.avatar) {
+    av.textContent = user.avatar;
+    av.style.background = 'var(--p-dim)';
+  } else if (user.name) {
+    av.textContent = user.name[0].toUpperCase();
+    av.style.background = idColor(user.id || '');
+  } else {
+    av.textContent = user.phone ? user.phone.slice(-2) : '?';
+    av.style.background = 'var(--p)';
+  }
+
+  document.getElementById('p-name').textContent  = user.name || (user.phone ? '···' + user.phone.slice(-4) : 'You');
+  document.getElementById('p-phone').textContent = user.username ? '@' + user.username : (user.email || '');
+  document.getElementById('p-prem').innerHTML    = user.isPremium
+    ? `<div class="prem-tag">⭐ Premium</div>`
+    : `<div class="free-tag">Free plan</div>`;
+
+  if (state.activeGroup) {
+    document.getElementById('mi-group-name').textContent  = state.activeGroup.name;
+    document.getElementById('mi-invite-code').textContent = state.activeGroup.inviteCode;
+  }
+}
+
+function openEditProfile() {
+  initProfileSetup();
+  go('s-profile-setup');
+}
+
+function showGroupInvite() {
+  if (!state.activeGroup) return;
+  toast(`Invite code: ${state.activeGroup.inviteCode}`);
+}
+
+// ─────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────
+function todayIST() {
+  const ist = new Date(Date.now() + 5.5*60*60*1000);
+  return ist.toISOString().split('T')[0];
+}
+function daysAgoIST(n) {
+  const ist = new Date(Date.now() + 5.5*60*60*1000);
+  ist.setUTCDate(ist.getUTCDate() - n);
+  return ist.toISOString().split('T')[0];
+}
+function daysDiff(a, b) {
+  return Math.round((new Date(b) - new Date(a)) / 86400000);
+}
+function shortDay(dateStr) {
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'short' }).slice(0,2);
+}
+function idColor(id) {
+  let n = 0; for (const c of id) n += c.charCodeAt(0);
+  return AV_COLORS[n % AV_COLORS.length];
+}
+function phoneInitials(phone) {
+  if (!phone) return '?';
+  return phone.slice(-2);
+}
+function vibeLabel(score) {
+  if (score >= 4.5) return 'Amazing vibes 🌟';
+  if (score >= 3.5) return 'Good energy 😊';
+  if (score >= 2.5) return 'Mixed feelings 😌';
+  if (score >= 1.5) return 'Rough day 😕';
+  return 'Tough times 😞';
+}
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function setLoading(id, on) {
+  const btn = document.getElementById(id);
+  if (!btn) return;
+  btn.disabled = on;
+  if (on) { btn._orig = btn.innerHTML; btn.innerHTML = `<div class="spinner" style="width:18px;height:18px;border-width:2px"></div>`; }
+  else if (btn._orig) btn.innerHTML = btn._orig;
+}
+
+let toastT;
+function toast(msg, type) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className   = 'show' + (type === 'err' ? ' err' : '');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => el.className = '', 2600);
+}
+
+// ─────────────────────────────────────────────
+// Boot
+// ─────────────────────────────────────────────
+boot();
+</script>
+</body>
+</html>
