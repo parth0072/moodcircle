@@ -4,12 +4,16 @@ const path = require('path');
 
 const app = express();
 
+// ── Base path (set BASE_PATH=/moodcircle in cPanel env if needed) ─────────────
+const BASE = (process.env.BASE_PATH || '').replace(/\/$/, '');
+
 // ── Body parsing ──────────────────────────────────────
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ── Static frontend ───────────────────────────────────
-app.use(express.static(path.join(__dirname, '..', 'public')));
+const publicDir = path.join(__dirname, '..', 'public');
+app.use(BASE || '/', express.static(publicDir));
 
 // ── Routes ────────────────────────────────────────────
 const authRoutes     = require('./routes/auth.routes');
@@ -22,17 +26,22 @@ const privateRoutes  = require('./routes/private.routes');
 const premiumRoutes  = require('./routes/premium.routes');
 const profileRoutes  = require('./routes/profile.routes');
 
-app.get('/api/health', (req, res) => res.json({ ok: true }));
+app.get(`${BASE}/api/health`, (req, res) => res.json({ ok: true }));
 
-app.use('/api/auth',                        authRoutes);
-app.use('/api/groups',                      groupRoutes);
-app.use('/api/groups/:groupId/moods',       moodRoutes);
-app.use('/api/moods/:moodId/reactions',     reactionRoutes);
-app.use('/api/groups/:groupId/nudge',       nudgeRoutes);
-app.use('/api/streaks',                     streakRoutes);
-app.use('/api/private',                     privateRoutes);
-app.use('/api/premium',                     premiumRoutes);
-app.use('/api/profile',                     profileRoutes);
+app.use(`${BASE}/api/auth`,                        authRoutes);
+app.use(`${BASE}/api/groups`,                      groupRoutes);
+app.use(`${BASE}/api/groups/:groupId/moods`,       moodRoutes);
+app.use(`${BASE}/api/moods/:moodId/reactions`,     reactionRoutes);
+app.use(`${BASE}/api/groups/:groupId/nudge`,       nudgeRoutes);
+app.use(`${BASE}/api/streaks`,                     streakRoutes);
+app.use(`${BASE}/api/private`,                     privateRoutes);
+app.use(`${BASE}/api/premium`,                     premiumRoutes);
+app.use(`${BASE}/api/profile`,                     profileRoutes);
+
+// ── Fallback: serve index.html for any non-API route ─────────────────────────
+app.get(`${BASE}/*`, (req, res) => {
+  res.sendFile(path.join(publicDir, 'index.html'));
+});
 
 // ── 404 handler ───────────────────────────────────────
 app.use((req, res) => {
@@ -48,7 +57,7 @@ app.use((err, req, res, next) => {
 // ── Start ─────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`MoodCircle API running on http://localhost:${PORT}`);
+  console.log(`MoodCircle API running on http://localhost:${PORT} (base: "${BASE || '/'}")`);
 });
 
 module.exports = app;
