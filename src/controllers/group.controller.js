@@ -51,6 +51,7 @@ function joinGroup(req, res) {
   }
 
   group.members.push(userId);
+  groups.set(group.id, group);
   return ok(res, { group: sanitize(group, userId) });
 }
 
@@ -69,6 +70,7 @@ function leaveGroup(req, res) {
 
   // If last member leaves, delete the group
   if (group.members.length === 0) groups.delete(groupId);
+  else groups.set(groupId, group);
 
   return ok(res, { message: 'Left group successfully' });
 }
