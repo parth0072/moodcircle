@@ -8,7 +8,9 @@
   },
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon src/app.js"
+    "dev": "node -r dotenv/config server.js dotenv_config_path=.env.dev",
+    "seed": "node scripts/seed.js",
+    "dev:fresh": "node scripts/seed.js && node -r dotenv/config server.js dotenv_config_path=.env.dev"
   },
   "dependencies": {
     "better-sqlite3": "^12.10.0",
