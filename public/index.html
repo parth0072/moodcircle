@@ -93,8 +93,8 @@ button, input, textarea { font-family: var(--font); }
 .auth-toggle { text-align: center; font-size: 13px; color: var(--txt2); margin-top: 4px; }
 .auth-toggle button { background: none; border: none; color: var(--p); font-weight: 600; cursor: pointer; font-size: 13px; font-family: var(--font); }
 /* ════ SET PASSWORD SHEET ════ */
-.pw-sheet { position: absolute; inset: 0; z-index: 110; background: rgba(0,0,0,.4); display: flex; align-items: flex-end; }
-.pw-sheet .sheet { gap: 12px; }
+.pw-sheet { position: fixed; inset: 0; z-index: 110; background: rgba(0,0,0,.4); display: flex; align-items: flex-end; justify-content: center; }
+.pw-sheet .sheet { gap: 12px; max-width: 390px; width: 100%; }
 
 /* ════ OTP ════ */
 #s-otp { background: var(--white); justify-content: center; padding: 40px 24px; }
@@ -124,9 +124,9 @@ button, input, textarea { font-family: var(--font); }
 .divider-or { display: flex; align-items: center; gap: 10px; color: var(--txt3); font-size: 12px; }
 .divider-or::before, .divider-or::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
-/* ════ GROUP SWITCHER SHEET ════ */
-.sheet-overlay { position: absolute; inset: 0; z-index: 100; background: rgba(0,0,0,.4); display: flex; align-items: flex-end; }
-.sheet { background: var(--white); border-radius: var(--r3) var(--r3) 0 0; width: 100%; padding: 12px 16px 40px; display: flex; flex-direction: column; gap: 8px; max-height: 70vh; overflow-y: auto; }
+/* ════ GROUP SWITCHER / PW SHEET ════ */
+.sheet-overlay { position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,.4); display: flex; align-items: flex-end; justify-content: center; }
+.sheet { width: 100%; max-width: 390px; background: var(--white); border-radius: var(--r3) var(--r3) 0 0; padding: 12px 16px 40px; display: flex; flex-direction: column; gap: 8px; max-height: 70vh; overflow-y: auto; }
 .sheet-handle { width: 36px; height: 4px; background: var(--border2); border-radius: 99px; margin: 0 auto 6px; flex-shrink: 0; }
 .sheet-title { font-size: 12px; font-weight: 600; color: var(--txt3); text-transform: uppercase; letter-spacing: .5px; padding: 0 2px 4px; flex-shrink: 0; }
 .group-row { display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--bg); border-radius: var(--r2); cursor: pointer; }
@@ -247,7 +247,7 @@ button, input, textarea { font-family: var(--font); }
 /* ════ POST SHEET ════ */
 .sheet-bg { position: absolute; inset: 0; z-index: 60; background: rgba(0,0,0,.35); display: flex; align-items: flex-end; opacity: 0; pointer-events: none; transition: opacity .22s; }
 .sheet-bg.open { opacity: 1; pointer-events: all; }
-.sheet { width: 100%; padding: 0 16px 36px; background: var(--white); border-radius: 20px 20px 0 0; border-top: 1px solid var(--border); transform: translateY(100%); transition: transform .26s cubic-bezier(.4,0,.2,1); }
+.sheet-bg .sheet { width: 100%; padding: 0 16px 36px; background: var(--white); border-radius: 20px 20px 0 0; border-top: 1px solid var(--border); transform: translateY(100%); transition: transform .26s cubic-bezier(.4,0,.2,1); }
 .sheet-bg.open .sheet { transform: translateY(0); }
 .sh-handle { width: 36px; height: 4px; border-radius: 99px; background: var(--border2); margin: 12px auto 18px; }
 .sh-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
