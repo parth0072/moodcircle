@@ -22,6 +22,8 @@ const privateRoutes  = require('./routes/private.routes');
 const premiumRoutes  = require('./routes/premium.routes');
 const profileRoutes  = require('./routes/profile.routes');
 
+app.get('/api/health', (req, res) => res.json({ ok: true }));
+
 app.use('/api/auth',                        authRoutes);
 app.use('/api/groups',                      groupRoutes);
 app.use('/api/groups/:groupId/moods',       moodRoutes);
