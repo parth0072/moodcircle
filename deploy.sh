@@ -30,7 +30,17 @@ echo "Using node: $(node -v 2>/dev/null || echo 'unknown')"
 echo ""
 echo "=== [1/2] Pulling latest code from main ==="
 cd "$ROOT"
-git pull origin main
+
+# If this directory was uploaded manually (not cloned), initialise git first
+if [ ! -d ".git" ]; then
+  echo "  → No git repo found. Initialising and connecting to remote..."
+  git init
+  git remote add origin https://github.com/parth0072/moodcircle.git
+  git fetch origin main
+  git reset --hard origin/main
+else
+  git pull origin main
+fi
 
 echo ""
 echo "=== [2/2] Installing production dependencies ==="
