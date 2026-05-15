@@ -953,13 +953,18 @@ function closeGroupSwitcher() {
 
 async function switchGroup(id) {
   closeGroupSwitcher();
-  if (id === state.activeGroupId) return;
+  if (id === state.activeGroupId) { go('s-feed'); return; }
   const g = state.allGroups.find(g => g.id === id);
-  if (!g) return;
+  if (!g) { toast('Group not found', 'err'); return; }
   state.activeGroup   = g;
   state.activeGroupId = g.id;
   localStorage.setItem('mc_group_id', g.id);
-  await loadFeed();
+  go('s-feed');
+  try {
+    await loadFeed();
+  } catch(e) {
+    toast(e.message || 'Could not load group', 'err');
+  }
 }
 
 function goSetup() {
