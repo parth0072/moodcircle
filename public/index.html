@@ -90,6 +90,11 @@ button, input, textarea { font-family: var(--font); }
 .auth-logo p  { font-size: 15px; color: var(--txt2); }
 .auth-form { display: flex; flex-direction: column; gap: 14px; }
 .auth-note { font-size: 12px; color: var(--txt3); text-align: center; }
+.auth-toggle { text-align: center; font-size: 13px; color: var(--txt2); margin-top: 4px; }
+.auth-toggle button { background: none; border: none; color: var(--p); font-weight: 600; cursor: pointer; font-size: 13px; font-family: var(--font); }
+/* ════ SET PASSWORD SHEET ════ */
+.pw-sheet { position: absolute; inset: 0; z-index: 110; background: rgba(0,0,0,.4); display: flex; align-items: flex-end; }
+.pw-sheet .sheet { gap: 12px; }
 
 /* ════ OTP ════ */
 #s-otp { background: var(--white); justify-content: center; padding: 40px 24px; }
@@ -312,10 +317,16 @@ button, input, textarea { font-family: var(--font); }
       <label>Email address</label>
       <input id="auth-identifier" class="input" type="email" placeholder="you@example.com" autocomplete="email"/>
     </div>
-    <button id="auth-btn" class="btn btn-primary btn-full" onclick="doRequestOTP()">Continue</button>
-    <div class="auth-note">We'll email you a one-time code. No passwords.</div>
+    <div class="field" id="auth-pw-field" style="display:none;">
+      <label>Password</label>
+      <input id="auth-password" class="input" type="password" placeholder="Your password" autocomplete="current-password"/>
+    </div>
+    <button id="auth-btn" class="btn btn-primary btn-full" onclick="doAuthSubmit()">Continue</button>
+    <div class="auth-note" id="auth-note">We'll email you a one-time code. No passwords.</div>
+    <div class="auth-toggle">
+      <button id="auth-toggle-btn" onclick="toggleAuthMode()">Sign in with password instead</button>
+    </div>
   </div>
-  <div id="recaptcha-container"></div>
 </div>
 
 <!-- ════ OTP ════ -->
@@ -565,6 +576,10 @@ button, input, textarea { font-family: var(--font); }
         <span class="mi-icon">➕</span><span class="mi-text">Create or Join Another Group</span>
         <svg class="mi-arr" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 2l5 5-5 5"/></svg>
       </div>
+      <div class="mi" onclick="openPwSheet(false)">
+        <span class="mi-icon">🔑</span><span class="mi-text" id="mi-pw-text">Set Quick-Login Password</span>
+        <svg class="mi-arr" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 2l5 5-5 5"/></svg>
+      </div>
       <div class="mi" onclick="logout()">
         <span class="mi-icon">🚪</span><span class="mi-text" style="color:#EF4444">Sign Out</span>
         <svg class="mi-arr" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 2l5 5-5 5"/></svg>
@@ -622,6 +637,25 @@ button, input, textarea { font-family: var(--font); }
 </div>
 
 <div id="toast"></div>
+<!-- ════ SET PASSWORD SHEET ════ -->
+<div id="pw-sheet" class="pw-sheet" style="display:none;" onclick="closePwSheet()">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <div style="font-size:22px;font-weight:800;" id="pw-sheet-title">Set a quick-login password</div>
+    <p style="font-size:13px;color:var(--txt2);margin-top:-4px;" id="pw-sheet-sub">Next time you can sign in instantly — no OTP needed.</p>
+    <div class="field">
+      <label>New password</label>
+      <input id="pw-new" class="input" type="password" placeholder="At least 6 characters" autocomplete="new-password"/>
+    </div>
+    <div class="field">
+      <label>Confirm password</label>
+      <input id="pw-confirm" class="input" type="password" placeholder="Repeat password" autocomplete="new-password"/>
+    </div>
+    <button id="pw-save-btn" class="btn btn-primary btn-full" onclick="doSetPassword()">Set Password</button>
+    <button class="btn btn-outline btn-full" id="pw-skip-btn" onclick="closePwSheet()">Skip for now</button>
+  </div>
+</div>
+
 <!-- ════ GROUP SWITCHER SHEET ════ -->
 <div id="group-switcher" class="sheet-overlay" style="display:none;" onclick="closeGroupSwitcher()">
   <div class="sheet" onclick="event.stopPropagation()">
@@ -815,23 +849,73 @@ async function continueAfterProfile() {
 }
 
 // ─────────────────────────────────────────────
-// Auth — Email OTP
+// Auth — OTP + Password modes
 // ─────────────────────────────────────────────
+let authMode = 'otp'; // 'otp' | 'password'
+
+function toggleAuthMode() {
+  authMode = authMode === 'otp' ? 'password' : 'otp';
+  const pwField   = document.getElementById('auth-pw-field');
+  const note      = document.getElementById('auth-note');
+  const toggleBtn = document.getElementById('auth-toggle-btn');
+  const btn       = document.getElementById('auth-btn');
+  if (authMode === 'password') {
+    pwField.style.display   = '';
+    note.textContent        = 'Sign in with your password.';
+    toggleBtn.textContent   = 'Use OTP instead';
+    btn.textContent         = 'Sign In';
+  } else {
+    pwField.style.display   = 'none';
+    note.textContent        = "We'll email you a one-time code. No passwords.";
+    toggleBtn.textContent   = 'Sign in with password instead';
+    btn.textContent         = 'Continue';
+  }
+}
+
+async function doAuthSubmit() {
+  if (authMode === 'password') {
+    await doPasswordLogin();
+  } else {
+    await doRequestOTP();
+  }
+}
+
 async function doRequestOTP() {
   const email = document.getElementById('auth-identifier').value.trim().toLowerCase();
   if (!email || !email.includes('@')) { toast('Enter a valid email address', 'err'); return; }
   setLoading('auth-btn', true);
   try {
     const data = await api('POST', '/auth/otp/request', { email });
-    pendingPhone = email; // reuse pendingPhone var as pendingEmail
+    pendingPhone = email;
     document.getElementById('otp-phone-display').textContent = email;
-    if (data.otp) { // dev mode auto-fill
+    if (data.otp) {
       const boxes = document.querySelectorAll('.otp-d');
       data.otp.split('').forEach((d, i) => { boxes[i].value = d; boxes[i].classList.add('v'); });
     }
     go('s-otp');
   } catch(e) {
     toast(e.message || 'Failed to send OTP', 'err');
+  } finally {
+    setLoading('auth-btn', false);
+  }
+}
+
+async function doPasswordLogin() {
+  const email    = document.getElementById('auth-identifier').value.trim().toLowerCase();
+  const password = document.getElementById('auth-password').value;
+  if (!email || !email.includes('@')) { toast('Enter a valid email address', 'err'); return; }
+  if (!password) { toast('Enter your password', 'err'); return; }
+  setLoading('auth-btn', true);
+  try {
+    const data = await api('POST', '/auth/password/login', { email, password });
+    state.token = data.token;
+    state.user  = data.user;
+    localStorage.setItem('mc_token', data.token);
+    localStorage.setItem('mc_user',  JSON.stringify(data.user));
+    document.getElementById('auth-password').value = '';
+    await boot();
+  } catch(e) {
+    toast(e.message || 'Invalid email or password', 'err');
   } finally {
     setLoading('auth-btn', false);
   }
@@ -849,6 +933,8 @@ async function doVerifyOTP() {
     localStorage.setItem('mc_user',  JSON.stringify(data.user));
     document.querySelectorAll('.otp-d').forEach(d => { d.value = ''; d.classList.remove('v'); });
     await boot();
+    // Prompt to set password if not set yet (after boot settles)
+    if (!data.user.hasPassword) setTimeout(() => openPwSheet(true), 400);
   } catch(e) {
     toast(e.message || 'Invalid OTP', 'err');
   } finally {
@@ -927,6 +1013,43 @@ document.querySelectorAll('.otp-d').forEach((el, i, all) => {
     if (e.key === 'Backspace' && !el.value && i > 0) all[i-1].focus();
   });
 });
+
+// ─────────────────────────────────────────────
+// Password sheet
+// ─────────────────────────────────────────────
+function openPwSheet(isFirstTime = false) {
+  document.getElementById('pw-sheet-title').textContent = isFirstTime ? 'Set a quick-login password' : 'Change password';
+  document.getElementById('pw-sheet-sub').textContent   = isFirstTime
+    ? 'Next time you can sign in instantly — no OTP needed.'
+    : 'Update your password for quick login.';
+  document.getElementById('pw-skip-btn').style.display  = isFirstTime ? '' : 'none';
+  document.getElementById('pw-new').value     = '';
+  document.getElementById('pw-confirm').value = '';
+  document.getElementById('pw-sheet').style.display = 'flex';
+}
+
+function closePwSheet() {
+  document.getElementById('pw-sheet').style.display = 'none';
+}
+
+async function doSetPassword() {
+  const pw  = document.getElementById('pw-new').value;
+  const pw2 = document.getElementById('pw-confirm').value;
+  if (pw.length < 6)  { toast('Password must be at least 6 characters', 'err'); return; }
+  if (pw !== pw2)     { toast('Passwords do not match', 'err'); return; }
+  setLoading('pw-save-btn', true);
+  try {
+    await api('POST', '/auth/password/set', { password: pw });
+    state.user.hasPassword = true;
+    localStorage.setItem('mc_user', JSON.stringify(state.user));
+    closePwSheet();
+    toast('Password set! You can now sign in quickly.');
+  } catch(e) {
+    toast(e.message || 'Failed to set password', 'err');
+  } finally {
+    setLoading('pw-save-btn', false);
+  }
+}
 
 // ─────────────────────────────────────────────
 // Groups — switcher sheet
@@ -1487,6 +1610,9 @@ function renderProfile() {
     document.getElementById('mi-group-name').textContent  = state.activeGroup.name;
     document.getElementById('mi-invite-code').textContent = state.activeGroup.inviteCode;
   }
+
+  document.getElementById('mi-pw-text').textContent = user.hasPassword
+    ? 'Change Password' : 'Set Quick-Login Password';
 }
 
 function openEditProfile() {
