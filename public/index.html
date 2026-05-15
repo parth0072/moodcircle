@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>MoodCircle</title>
 <style>
 :root {
@@ -25,10 +27,11 @@
   --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-html, body { height: 100%; background: var(--bg); color: var(--txt); font-family: var(--font); -webkit-font-smoothing: antialiased; overflow: hidden; }
+html { height: 100%; height: -webkit-fill-available; }
+body { height: 100%; min-height: -webkit-fill-available; background: var(--bg); color: var(--txt); font-family: var(--font); -webkit-font-smoothing: antialiased; overflow: hidden; }
 button, input, textarea { font-family: var(--font); }
 
-#app { max-width: 390px; height: 100vh; margin: 0 auto; position: relative; overflow: hidden; background: var(--bg); }
+#app { max-width: 390px; height: 100%; min-height: -webkit-fill-available; margin: 0 auto; position: relative; overflow: hidden; background: var(--bg); }
 
 /* ── Screens ── */
 .screen { position: absolute; inset: 0; z-index: 1; display: flex; flex-direction: column; background: var(--bg); visibility: hidden; overflow: hidden; }
@@ -56,7 +59,7 @@ button, input, textarea { font-family: var(--font); }
 .input::placeholder { color: var(--txt3); }
 .input-pre { padding: 11px 12px; background: var(--bg); border: 1px solid var(--border2); border-radius: var(--r2); font-size: 14px; color: var(--txt2); white-space: nowrap; }
 
-.bottom-nav { position: absolute; bottom: 0; left: 0; right: 0; z-index: 50; display: flex; align-items: flex-end; justify-content: space-around; padding: 10px 8px 26px; background: var(--white); border-top: 1px solid var(--border); }
+.bottom-nav { position: absolute; bottom: 0; left: 0; right: 0; z-index: 50; display: flex; align-items: flex-end; justify-content: space-around; padding: 10px 8px calc(16px + env(safe-area-inset-bottom, 16px)); background: var(--white); border-top: 1px solid var(--border); }
 .nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 14px; cursor: pointer; border: none; background: none; color: var(--txt3); font-family: var(--font); }
 .nav-item.on { color: var(--p); }
 .nav-item svg { width: 22px; height: 22px; stroke-width: 1.7; }
@@ -70,7 +73,7 @@ button, input, textarea { font-family: var(--font); }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ── Toast ── */
-#toast { position: absolute; bottom: 82px; left: 50%; transform: translateX(-50%); background: var(--txt); color: #fff; border-radius: 99px; padding: 9px 18px; font-size: 13px; font-weight: 500; white-space: nowrap; z-index: 200; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; }
+#toast { position: absolute; bottom: calc(82px + env(safe-area-inset-bottom, 16px)); left: 50%; transform: translateX(-50%); background: var(--txt); color: #fff; border-radius: 99px; padding: 9px 18px; font-size: 13px; font-weight: 500; white-space: nowrap; z-index: 200; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; }
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
 #toast.err { background: #EF4444; }
 
@@ -129,7 +132,7 @@ button, input, textarea { font-family: var(--font); }
 .group-row-check { color: var(--p); font-size: 17px; font-weight: 800; margin-left: auto; }
 
 /* ════ FEED ════ */
-.feed-scroll { flex: 1; overflow-y: auto; padding: 12px 14px 96px; display: flex; flex-direction: column; gap: 10px; }
+.feed-scroll { flex: 1; overflow-y: auto; padding: 12px 14px calc(88px + env(safe-area-inset-bottom, 16px)); display: flex; flex-direction: column; gap: 10px; }
 .feed-scroll::-webkit-scrollbar { display: none; }
 
 .vibe-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: var(--white); border: 1px solid var(--border); border-radius: var(--r); }
@@ -187,7 +190,7 @@ button, input, textarea { font-family: var(--font); }
 .feed-loading { display: flex; justify-content: center; padding: 32px 0; }
 
 /* ════ HISTORY ════ */
-.hist-scroll { flex: 1; overflow-y: auto; padding: 12px 14px 96px; display: flex; flex-direction: column; gap: 12px; }
+.hist-scroll { flex: 1; overflow-y: auto; padding: 12px 14px calc(88px + env(safe-area-inset-bottom, 16px)); display: flex; flex-direction: column; gap: 12px; }
 .hist-scroll::-webkit-scrollbar { display: none; }
 .period-row { display: flex; gap: 6px; }
 .p-tab { padding: 6px 14px; border-radius: 99px; border: 1px solid var(--border2); background: var(--white); color: var(--txt2); font-size: 13px; font-weight: 500; cursor: pointer; font-family: var(--font); }
@@ -206,7 +209,7 @@ button, input, textarea { font-family: var(--font); }
 .stat-lbl { font-size: 12px; color: var(--txt2); }
 
 /* ════ STREAK ════ */
-.streak-scroll { flex: 1; overflow-y: auto; padding: 12px 14px 96px; display: flex; flex-direction: column; gap: 12px; }
+.streak-scroll { flex: 1; overflow-y: auto; padding: 12px 14px calc(88px + env(safe-area-inset-bottom, 16px)); display: flex; flex-direction: column; gap: 12px; }
 .streak-hero { background: #FFF7ED; border: 1px solid #FED7AA; border-radius: var(--r3); padding: 28px 20px; text-align: center; }
 .sh-flame { font-size: 48px; display: block; margin-bottom: 8px; }
 .sh-num   { font-size: 64px; font-weight: 900; letter-spacing: -3px; color: #EA580C; line-height: 1; }
@@ -222,7 +225,7 @@ button, input, textarea { font-family: var(--font); }
 .cd.n { background: var(--bg); opacity: .35; }
 
 /* ════ PROFILE ════ */
-.profile-scroll { flex: 1; overflow-y: auto; padding: 12px 14px 96px; display: flex; flex-direction: column; gap: 10px; }
+.profile-scroll { flex: 1; overflow-y: auto; padding: 12px 14px calc(88px + env(safe-area-inset-bottom, 16px)); display: flex; flex-direction: column; gap: 10px; }
 .p-hero { background: var(--white); border: 1px solid var(--border); border-radius: var(--r); padding: 24px 16px; display: flex; flex-direction: column; align-items: center; }
 .p-av   { width: 68px; height: 68px; border-radius: 18px; background: var(--p); display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 12px; }
 .p-name  { font-size: 18px; font-weight: 700; margin-bottom: 3px; }
