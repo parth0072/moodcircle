@@ -1061,7 +1061,7 @@ function openGroupSwitcher() {
     <div class="group-row${g.id === state.activeGroupId ? ' sel' : ''}" onclick="switchGroup('${g.id}')">
       <div class="group-row-icon">🫂</div>
       <div style="flex:1">
-        <div class="group-row-name">${esc(g.name)}</div>
+        <div class="group-row-name">${escHtml(g.name)}</div>
         <div class="group-row-code">#${g.inviteCode}</div>
       </div>
       ${g.id === state.activeGroupId ? '<span class="group-row-check">✓</span>' : ''}
