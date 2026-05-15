@@ -116,6 +116,18 @@ button, input, textarea { font-family: var(--font); }
 .divider-or { display: flex; align-items: center; gap: 10px; color: var(--txt3); font-size: 12px; }
 .divider-or::before, .divider-or::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
+/* ════ GROUP SWITCHER SHEET ════ */
+.sheet-overlay { position: absolute; inset: 0; z-index: 100; background: rgba(0,0,0,.4); display: flex; align-items: flex-end; }
+.sheet { background: var(--white); border-radius: var(--r3) var(--r3) 0 0; width: 100%; padding: 12px 16px 40px; display: flex; flex-direction: column; gap: 8px; max-height: 70vh; overflow-y: auto; }
+.sheet-handle { width: 36px; height: 4px; background: var(--border2); border-radius: 99px; margin: 0 auto 6px; flex-shrink: 0; }
+.sheet-title { font-size: 12px; font-weight: 600; color: var(--txt3); text-transform: uppercase; letter-spacing: .5px; padding: 0 2px 4px; flex-shrink: 0; }
+.group-row { display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--bg); border-radius: var(--r2); cursor: pointer; }
+.group-row.sel { background: var(--p-dim); }
+.group-row-icon { width: 34px; height: 34px; border-radius: 9px; background: var(--p); display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+.group-row-name { font-size: 15px; font-weight: 600; }
+.group-row-code { font-size: 11px; color: var(--txt3); margin-top: 1px; }
+.group-row-check { color: var(--p); font-size: 17px; font-weight: 800; margin-left: auto; }
+
 /* ════ FEED ════ */
 .feed-scroll { flex: 1; overflow-y: auto; padding: 12px 14px 96px; display: flex; flex-direction: column; gap: 10px; }
 .feed-scroll::-webkit-scrollbar { display: none; }
@@ -355,16 +367,10 @@ button, input, textarea { font-family: var(--font); }
 <div id="s-setup" class="screen">
   <div class="topbar">
     <div class="topbar-left">
-      <div class="logo-icon" style="width:28px;height:28px;border-radius:8px;">
-        <svg viewBox="0 0 26 26" fill="none" style="width:16px;height:16px;">
-          <circle cx="13" cy="13" r="4.5" fill="white" opacity=".95"/>
-          <circle cx="5" cy="7" r="2.5" fill="white" opacity=".6"/>
-          <circle cx="21" cy="7" r="2.5" fill="white" opacity=".6"/>
-          <circle cx="5" cy="19" r="2.5" fill="white" opacity=".6"/>
-          <circle cx="21" cy="19" r="2.5" fill="white" opacity=".6"/>
-        </svg>
-      </div>
-      <span class="topbar-title">MoodCircle</span>
+      <button id="setup-back-btn" class="icon-btn" onclick="go('s-feed')" title="Back" style="display:none;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <span class="topbar-title" id="setup-title">MoodCircle</span>
     </div>
     <button class="icon-btn" onclick="logout()" title="Sign out">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
@@ -372,9 +378,9 @@ button, input, textarea { font-family: var(--font); }
   </div>
   <div class="setup-scroll">
     <div class="setup-hero">
-      <div style="font-size:48px;margin-bottom:12px;">🫂</div>
-      <h2>You're not in any groups yet</h2>
-      <p>Create a group for your friends, or join one with an invite code.</p>
+      <div id="setup-hero-emoji" style="font-size:48px;margin-bottom:12px;">🫂</div>
+      <h2 id="setup-hero-title">You're not in any groups yet</h2>
+      <p id="setup-hero-sub">Create a group for your friends, or join one with an invite code.</p>
     </div>
 
     <div class="setup-card">
@@ -404,12 +410,13 @@ button, input, textarea { font-family: var(--font); }
 <!-- ════ FEED ════ -->
 <div id="s-feed" class="screen">
   <div class="topbar">
-    <div class="topbar-left">
+    <div class="topbar-left" id="feed-group-header" onclick="openGroupSwitcher()" style="cursor:pointer;">
       <div id="feed-group-icon" style="width:30px;height:30px;border-radius:8px;background:var(--p);display:flex;align-items:center;justify-content:center;font-size:14px;">🫂</div>
       <div>
         <div class="topbar-title" id="feed-group-name">Loading…</div>
         <div style="font-size:11px;color:var(--txt3)" id="feed-group-meta"></div>
       </div>
+      <svg id="feed-group-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="color:var(--txt3);display:none;margin-left:2px;"><polyline points="6 9 12 15 18 9"/></svg>
     </div>
     <div class="topbar-right">
       <button class="icon-btn" onclick="loadFeed()" title="Refresh">
@@ -612,6 +619,19 @@ button, input, textarea { font-family: var(--font); }
 </div>
 
 <div id="toast"></div>
+<!-- ════ GROUP SWITCHER SHEET ════ -->
+<div id="group-switcher" class="sheet-overlay" style="display:none;" onclick="closeGroupSwitcher()">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Your Groups</div>
+    <div id="switcher-list"></div>
+    <button class="btn btn-outline btn-full" style="margin-top:4px;flex-shrink:0;" onclick="closeGroupSwitcher(); goSetup()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add another group
+    </button>
+  </div>
+</div>
+
 </div><!-- #app -->
 
 <script>
@@ -639,6 +659,7 @@ const state = {
   user:          JSON.parse(localStorage.getItem('mc_user')  || 'null'),
   activeGroupId: localStorage.getItem('mc_group_id'),
   activeGroup:   null,
+  allGroups:     [],
   feed:          [],
   myReactions:   {},   // `${moodId}__${type}` → reactionId
   streak:        null,
@@ -705,8 +726,9 @@ async function boot() {
   go('s-loading');
   try {
     const { groups } = await api('GET', '/groups');
+    state.allGroups = groups;
     // api() calls logout() on 401, so we only reach here with a valid session
-    if (!groups.length) { go('s-setup'); return; }
+    if (!groups.length) { go('s-setup'); updateSetupScreen(); return; }
     const g = groups.find(g => g.id === state.activeGroupId) || groups[0];
     state.activeGroup   = g;
     state.activeGroupId = g.id;
@@ -776,7 +798,8 @@ async function continueAfterProfile() {
   go('s-loading');
   try {
     const { groups } = await api('GET', '/groups');
-    if (!groups.length) { go('s-setup'); return; }
+    state.allGroups = groups;
+    if (!groups.length) { go('s-setup'); updateSetupScreen(); return; }
     const g = groups.find(g => g.id === state.activeGroupId) || groups[0];
     state.activeGroup   = g;
     state.activeGroupId = g.id;
@@ -903,6 +926,56 @@ document.querySelectorAll('.otp-d').forEach((el, i, all) => {
 });
 
 // ─────────────────────────────────────────────
+// Groups — switcher sheet
+// ─────────────────────────────────────────────
+function openGroupSwitcher() {
+  if (!state.allGroups || state.allGroups.length <= 1) return;
+  const list = document.getElementById('switcher-list');
+  list.innerHTML = state.allGroups.map(g => `
+    <div class="group-row${g.id === state.activeGroupId ? ' sel' : ''}" onclick="switchGroup('${g.id}')">
+      <div class="group-row-icon">🫂</div>
+      <div style="flex:1">
+        <div class="group-row-name">${esc(g.name)}</div>
+        <div class="group-row-code">#${g.inviteCode}</div>
+      </div>
+      ${g.id === state.activeGroupId ? '<span class="group-row-check">✓</span>' : ''}
+    </div>
+  `).join('');
+  document.getElementById('group-switcher').style.display = 'flex';
+}
+
+function closeGroupSwitcher() {
+  document.getElementById('group-switcher').style.display = 'none';
+}
+
+async function switchGroup(id) {
+  closeGroupSwitcher();
+  if (id === state.activeGroupId) return;
+  const g = state.allGroups.find(g => g.id === id);
+  if (!g) return;
+  state.activeGroup   = g;
+  state.activeGroupId = g.id;
+  localStorage.setItem('mc_group_id', g.id);
+  await loadFeed();
+}
+
+function goSetup() {
+  updateSetupScreen();
+  go('s-setup');
+}
+
+function updateSetupScreen() {
+  const hasGroups = state.allGroups && state.allGroups.length > 0;
+  document.getElementById('setup-back-btn').style.display  = hasGroups ? '' : 'none';
+  document.getElementById('setup-title').textContent       = hasGroups ? 'Add a group' : 'MoodCircle';
+  document.getElementById('setup-hero-emoji').textContent  = hasGroups ? '➕' : '🫂';
+  document.getElementById('setup-hero-title').textContent  = hasGroups ? 'Add another group' : "You're not in any groups yet";
+  document.getElementById('setup-hero-sub').textContent    = hasGroups
+    ? 'Create a new group or join one with an invite code.'
+    : 'Create a group for your friends, or join one with an invite code.';
+}
+
+// ─────────────────────────────────────────────
 // Groups — setup screen
 // ─────────────────────────────────────────────
 async function doCreateGroup() {
@@ -914,6 +987,8 @@ async function doCreateGroup() {
     state.activeGroup   = data.group;
     state.activeGroupId = data.group.id;
     localStorage.setItem('mc_group_id', data.group.id);
+    if (!state.allGroups.find(g => g.id === data.group.id)) state.allGroups.push(data.group);
+    document.getElementById('create-name').value = '';
     toast(`"${data.group.name}" created! Invite code: ${data.group.inviteCode}`);
     await loadFeed();
     go('s-feed');
@@ -933,6 +1008,8 @@ async function doJoinGroup() {
     state.activeGroup   = data.group;
     state.activeGroupId = data.group.id;
     localStorage.setItem('mc_group_id', data.group.id);
+    if (!state.allGroups.find(g => g.id === data.group.id)) state.allGroups.push(data.group);
+    document.getElementById('join-code').value = '';
     toast(`Joined "${data.group.name}"!`);
     await loadFeed();
     go('s-feed');
@@ -978,6 +1055,9 @@ async function loadFeed() {
     document.getElementById('feed-group-name').textContent = state.activeGroup.name;
     document.getElementById('feed-group-meta').textContent =
       `${state.activeGroup.memberCount} members · #${state.activeGroup.inviteCode}`;
+    // Show chevron if user has multiple groups
+    document.getElementById('feed-group-chevron').style.display =
+      (state.allGroups && state.allGroups.length > 1) ? '' : 'none';
 
     renderFeed(feedData);
   } catch(e) {
