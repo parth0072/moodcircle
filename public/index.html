@@ -898,7 +898,7 @@ async function doSaveProfile() {
     const { user } = await api('PATCH', '/profile', { name, username: username || undefined, avatar: chosenAvatar });
     state.user = { ...state.user, ...user };
     localStorage.setItem('mc_user', JSON.stringify(state.user));
-    await continueAfterProfile();
+    await afterProfileSetupExit();
   } catch(e) {
     toast(e.message || 'Failed to save profile', 'err');
   } finally {
@@ -907,14 +907,21 @@ async function doSaveProfile() {
 }
 
 async function skipProfile() {
+  await afterProfileSetupExit();
+}
+
+// Only reachable right after the profile-setup screen itself (a fresh
+// signup, or an explicit "Edit Profile") — never from a plain login, so
+// an existing account's sign-in is never interrupted by this.
+async function afterProfileSetupExit() {
+  // "Things that make you feel good" — asked once. accounts that
+  // predate this feature pick it up next time they touch their profile,
+  // not by having their next login hijacked.
+  if (!state.user?.joyOnboarded) { go('s-joy-setup'); initJoySetup(); return; }
   await continueAfterProfile();
 }
 
 async function continueAfterProfile() {
-  // "Things that make you feel good" — asked once, right after profile
-  // setup (or on next load, for accounts that predate this feature).
-  if (!state.user?.joyOnboarded) { go('s-joy-setup'); initJoySetup(); return; }
-
   go('s-loading');
   try {
     const { groups } = await api('GET', '/groups');
