@@ -345,8 +345,15 @@ button, input, textarea { font-family: var(--font); }
 
 <!-- ════ LOADING ════ -->
 <div id="s-loading" class="screen">
-  <div class="spinner spinner-lg"></div>
-  <p>Loading MoodCircle…</p>
+  <div id="loading-spinner-wrap" style="display:flex;flex-direction:column;align-items:center;gap:14px;">
+    <div class="spinner spinner-lg"></div>
+    <p>Loading MoodCircle…</p>
+  </div>
+  <div id="loading-error" style="display:none;flex-direction:column;align-items:center;gap:10px;padding:0 32px;text-align:center;">
+    <div style="font-size:32px;">📡</div>
+    <p style="font-size:14px;color:var(--txt2);">Couldn't reach MoodCircle. Check your connection and try again — you're still signed in.</p>
+    <button class="btn btn-primary" onclick="continueAfterProfile()">Retry</button>
+  </div>
 </div>
 
 <!-- ════ AUTH ════ -->
@@ -923,6 +930,8 @@ async function afterProfileSetupExit() {
 
 async function continueAfterProfile() {
   go('s-loading');
+  document.getElementById('loading-spinner-wrap').style.display = 'flex';
+  document.getElementById('loading-error').style.display = 'none';
   try {
     const { groups } = await api('GET', '/groups');
     state.allGroups = groups;
@@ -934,7 +943,14 @@ async function continueAfterProfile() {
     await loadFeed();
     go('s-feed');
   } catch(e) {
-    if (curScreen !== 's-auth') go('s-auth');
+    // api() already handled a real 401 itself (logout() clears state.token
+    // and navigates to auth). Anything else here — a network blip, a slow
+    // cold-start on shared hosting, a bad response — is NOT an auth
+    // failure, so don't sign the user out or bounce them to login; their
+    // token is still good, just offer a retry.
+    if (!state.token) { if (curScreen !== 's-auth') go('s-auth'); return; }
+    document.getElementById('loading-spinner-wrap').style.display = 'none';
+    document.getElementById('loading-error').style.display = 'flex';
   }
 }
 
