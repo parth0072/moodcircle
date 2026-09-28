@@ -286,6 +286,37 @@ button, input, textarea { font-family: var(--font); }
 
 /* avatar update — larger emoji support on profile */
 .p-av { font-size: 36px; }
+
+/* ════ RESPONSIVE — TABLET / DESKTOP ════
+   Below 640px (phones): unchanged, full-bleed edge-to-edge app.
+   At 640px+ (tablet/desktop): present the mobile UI as a centered
+   phone-shaped card over a branded backdrop instead of a bare sliver. */
+@media (min-width: 640px) {
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: auto;
+    padding: 32px 16px;
+    background:
+      radial-gradient(circle at 15% 20%, var(--p) 0%, transparent 45%),
+      radial-gradient(circle at 85% 85%, var(--p-dark) 0%, transparent 55%),
+      #150E33;
+  }
+  #app {
+    width: 390px;
+    height: min(860px, calc(100vh - 64px));
+    min-height: 0;
+    flex-shrink: 0;
+    border-radius: 32px;
+    box-shadow: 0 40px 90px -24px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.08);
+    /* Establishes a containing block for position:fixed descendants (the
+       group switcher + password sheets), so they clip to the card's
+       rounded edges here instead of the real browser viewport. Mobile
+       keeps true viewport-fixed positioning untouched. */
+    transform: translateZ(0);
+  }
+}
 </style>
 </head>
 <body>
