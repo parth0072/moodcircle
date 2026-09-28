@@ -47,24 +47,24 @@ All responses follow a consistent envelope:
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/auth/otp/request` | Send OTP to a phone number |
+| POST | `/api/auth/otp/request` | Send OTP to an email address |
 | POST | `/api/auth/otp/verify` | Verify OTP and receive a JWT |
 
 **Request — OTP request**
 ```json
-{ "phone": "+919876543210" }
+{ "email": "you@example.com" }
 ```
 
 **Request — OTP verify**
 ```json
-{ "phone": "+919876543210", "otp": "123456" }
+{ "email": "you@example.com", "otp": "123456" }
 ```
 
 **Response — OTP verify**
 ```json
 {
   "token": "<jwt>",
-  "user": { "id": "...", "phone": "...", "isPremium": false }
+  "user": { "id": "...", "email": "...", "isPremium": false }
 }
 ```
 
