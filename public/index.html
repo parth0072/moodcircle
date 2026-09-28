@@ -186,6 +186,10 @@ button, input, textarea { font-family: var(--font); }
 .nudge-btn { margin-left: auto; padding: 4px 10px; border-radius: 99px; border: 1px solid var(--border2); background: transparent; font-size: 12px; color: var(--txt3); cursor: pointer; font-family: var(--font); transition: all .12s; }
 .nudge-btn:hover { border-color: #F97316; color: #F97316; }
 .nudge-btn.sent  { color: #F97316; border-color: #FED7AA; background: #FFF7ED; }
+/* Low-mood posts get a distinct "support" nudge instead of a playful one */
+.nudge-btn.support         { color: #2563EB; border-color: #BFDBFE; background: #EFF6FF; }
+.nudge-btn.support:hover   { border-color: #2563EB; color: #2563EB; }
+.nudge-btn.support.sent    { color: #2563EB; border-color: #BFDBFE; background: #EFF6FF; }
 
 .empty-feed { display: flex; flex-direction: column; align-items: center; padding: 40px 20px; gap: 8px; text-align: center; }
 .empty-feed .icon { font-size: 40px; }
@@ -286,6 +290,23 @@ button, input, textarea { font-family: var(--font); }
 
 /* avatar update — larger emoji support on profile */
 .p-av { font-size: 36px; }
+
+/* ════ JOY SETUP (onboarding: things that make you feel good) ════ */
+#s-joy-setup { background: var(--white); justify-content: flex-start; overflow-y: auto; padding: 48px 24px 40px; }
+.chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.chip { padding: 9px 14px; border-radius: 99px; border: 1.5px solid var(--border2); background: var(--bg); color: var(--txt2); font-size: 13px; font-weight: 500; cursor: pointer; transition: all .12s; }
+.chip.sel { border-color: var(--p); background: var(--p-dim); color: var(--p); font-weight: 600; }
+.chip-added-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; min-height: 1px; }
+.chip-added { display: flex; align-items: center; gap: 7px; padding: 8px 8px 8px 14px; border-radius: 99px; background: var(--p-dim); border: 1px solid #C4B5FD; color: var(--p); font-size: 13px; font-weight: 600; }
+.chip-added span { cursor: pointer; color: var(--p); opacity: .65; font-size: 12px; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.chip-added span:hover { opacity: 1; background: rgba(255,255,255,.5); }
+.chip-custom-row { display: flex; gap: 8px; margin-bottom: 24px; }
+.chip-custom-row .input { font-size: 14px; }
+.chip-custom-row button { padding: 0 16px; border-radius: var(--r2); border: 1px solid var(--border2); background: var(--white); color: var(--p); font-weight: 700; font-size: 18px; cursor: pointer; font-family: var(--font); }
+
+/* ════ MIND-DIVERT SHEET (suggested after a low mood check-in) ════ */
+.divert-card { padding: 18px 16px; background: var(--p-dim); border: 1px solid #C4B5FD; border-radius: var(--r); font-size: 16px; font-weight: 700; color: var(--p-dark); text-align: center; line-height: 1.4; margin-bottom: 14px; }
+.divert-tip { font-size: 12px; color: var(--txt3); margin: -6px 0 14px; text-align: center; }
 
 /* ════ RESPONSIVE — TABLET / DESKTOP ════
    Below 640px (phones): unchanged, full-bleed edge-to-edge app.
@@ -408,6 +429,24 @@ button, input, textarea { font-family: var(--font); }
   </div>
 </div>
 
+<!-- ════ JOY SETUP (onboarding: things that make you feel good) ════ -->
+<div id="s-joy-setup" class="screen">
+  <div class="ps-title">What makes you feel good?</div>
+  <div class="ps-sub">Pick a few things — on a hard day, we'll remind you of them.</div>
+
+  <div class="chip-row" id="joy-chip-grid"><!-- filled by JS --></div>
+
+  <div class="chip-added-row" id="joy-added-list"><!-- filled by JS --></div>
+
+  <div class="chip-custom-row">
+    <input id="joy-custom-input" class="input" type="text" placeholder="Add your own…" maxlength="60" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomJoy();}"/>
+    <button onclick="addCustomJoy()" title="Add">+</button>
+  </div>
+
+  <button id="joy-btn" class="btn btn-primary btn-full" onclick="doSaveJoyActivities()">Continue</button>
+  <div class="ps-skip"><button onclick="doSaveJoyActivities()">Skip for now</button></div>
+</div>
+
 <!-- ════ SETUP (no groups) ════ -->
 <div id="s-setup" class="screen">
   <div class="topbar">
@@ -506,6 +545,11 @@ button, input, textarea { font-family: var(--font); }
       </button>
       <span class="topbar-title">History</span>
     </div>
+    <div class="topbar-right">
+      <button class="icon-btn" onclick="shareHappinessNow()" title="Share">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      </button>
+    </div>
   </div>
   <div class="hist-scroll" id="hist-scroll">
     <div class="feed-loading"><div class="spinner"></div></div>
@@ -589,6 +633,10 @@ button, input, textarea { font-family: var(--font); }
         <span class="mi-icon">✏️</span><span class="mi-text">Edit Profile</span>
         <svg class="mi-arr" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 2l5 5-5 5"/></svg>
       </div>
+      <div class="mi" onclick="openEditJoy()">
+        <span class="mi-icon">🌈</span><span class="mi-text">Things That Make Me Feel Good</span>
+        <svg class="mi-arr" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 2l5 5-5 5"/></svg>
+      </div>
       <div class="mi" onclick="showGroupInvite()">
         <span class="mi-icon">🔗</span><span class="mi-text" id="mi-group-name">My Group</span>
         <span id="mi-invite-code" style="font-size:12px;font-weight:700;color:var(--p);letter-spacing:2px;margin-right:4px;"></span>
@@ -667,6 +715,20 @@ button, input, textarea { font-family: var(--font); }
   </div>
 </div>
 
+<!-- ════ MIND-DIVERT SHEET (shown after a Rough/Low check-in) ════ -->
+<div class="sheet-bg" id="divert-sheet-bg" onclick="closeDivertSheet(event)">
+  <div class="sheet">
+    <div class="sh-handle"></div>
+    <div class="sh-title">Feeling low today 💙</div>
+    <div class="sh-sub">One small thing that might help right now</div>
+    <div class="divert-card" id="divert-text">—</div>
+    <div class="divert-tip" id="divert-tip" style="display:none;">💡 Add things you love in your profile so we can suggest them here.</div>
+    <button class="btn btn-outline btn-full" style="margin-bottom:8px" onclick="anotherDivertIdea()">🔄 Another idea</button>
+    <button class="btn btn-outline btn-full" id="divert-switch-btn" style="margin-bottom:8px" onclick="switchToGroundingReset()">🎲 Try a quick reset instead</button>
+    <button class="btn btn-primary btn-full" onclick="closeDivertSheet()">Got it</button>
+  </div>
+</div>
+
 <div id="toast"></div>
 <!-- ════ SET PASSWORD SHEET ════ -->
 <div id="pw-sheet" class="pw-sheet" style="display:none;" onclick="closePwSheet()">
@@ -733,6 +795,7 @@ const state = {
   streak:        null,
   checkedInToday: false,
   histDays:      7,
+  happinessPct:  null,
 };
 
 // ─────────────────────────────────────────────
@@ -791,22 +854,7 @@ async function boot() {
   // First-time users need to set up their profile
   if (!state.user?.name) { go('s-profile-setup'); initProfileSetup(); return; }
 
-  go('s-loading');
-  try {
-    const { groups } = await api('GET', '/groups');
-    state.allGroups = groups;
-    // api() calls logout() on 401, so we only reach here with a valid session
-    if (!groups.length) { go('s-setup'); updateSetupScreen(); return; }
-    const g = groups.find(g => g.id === state.activeGroupId) || groups[0];
-    state.activeGroup   = g;
-    state.activeGroupId = g.id;
-    localStorage.setItem('mc_group_id', g.id);
-    await loadFeed();
-    go('s-feed');
-  } catch(e) {
-    // api() already navigated to auth on 401; guard against any other error
-    if (curScreen !== 's-auth') go('s-auth');
-  }
+  await continueAfterProfile();
 }
 
 // ─────────────────────────────────────────────
@@ -863,6 +911,10 @@ async function skipProfile() {
 }
 
 async function continueAfterProfile() {
+  // "Things that make you feel good" — asked once, right after profile
+  // setup (or on next load, for accounts that predate this feature).
+  if (!state.user?.joyOnboarded) { go('s-joy-setup'); initJoySetup(); return; }
+
   go('s-loading');
   try {
     const { groups } = await api('GET', '/groups');
@@ -876,6 +928,83 @@ async function continueAfterProfile() {
     go('s-feed');
   } catch(e) {
     if (curScreen !== 's-auth') go('s-auth');
+  }
+}
+
+// ─────────────────────────────────────────────
+// Joy Setup — "things that make you feel good"
+// ─────────────────────────────────────────────
+const JOY_SUGGESTIONS = [
+  'Listening to music', 'Going for a walk', 'Calling a friend', 'Dancing',
+  'Journaling', 'Cooking something', 'Reading', 'Napping', 'Playing a game',
+  'Exercising', 'Meditating', 'Watching a comfort show',
+];
+let chosenJoyActivities = [];
+
+function initJoySetup() {
+  chosenJoyActivities = Array.isArray(state.user?.joyActivities) ? [...state.user.joyActivities] : [];
+  document.getElementById('joy-custom-input').value = '';
+  renderJoyChips();
+  renderJoyAdded();
+}
+
+function renderJoyChips() {
+  document.getElementById('joy-chip-grid').innerHTML = JOY_SUGGESTIONS.map((s, i) => {
+    const on = chosenJoyActivities.includes(s);
+    return `<div class="chip${on ? ' sel' : ''}" onclick="toggleJoyChip(${i})">${on ? '✓ ' : ''}${escHtml(s)}</div>`;
+  }).join('');
+}
+
+function renderJoyAdded() {
+  const customs = chosenJoyActivities.filter(a => !JOY_SUGGESTIONS.includes(a));
+  document.getElementById('joy-added-list').innerHTML = customs.map((a, i) =>
+    `<div class="chip-added">${escHtml(a)} <span onclick="removeCustomJoyAt(${i})">✕</span></div>`
+  ).join('');
+}
+
+function toggleJoyChip(idx) {
+  const text = JOY_SUGGESTIONS[idx];
+  const i = chosenJoyActivities.indexOf(text);
+  if (i >= 0) {
+    chosenJoyActivities.splice(i, 1);
+  } else {
+    if (chosenJoyActivities.length >= 12) { toast('You can add up to 12', 'err'); return; }
+    chosenJoyActivities.push(text);
+  }
+  renderJoyChips();
+  renderJoyAdded();
+}
+
+function addCustomJoy() {
+  const input = document.getElementById('joy-custom-input');
+  const val = input.value.trim();
+  if (!val) return;
+  if (chosenJoyActivities.length >= 12) { toast('You can add up to 12', 'err'); return; }
+  if (!chosenJoyActivities.includes(val)) chosenJoyActivities.push(val);
+  input.value = '';
+  renderJoyChips();
+  renderJoyAdded();
+}
+
+function removeCustomJoyAt(customIdx) {
+  const customs = chosenJoyActivities.filter(a => !JOY_SUGGESTIONS.includes(a));
+  const val = customs[customIdx];
+  chosenJoyActivities = chosenJoyActivities.filter(a => a !== val);
+  renderJoyChips();
+  renderJoyAdded();
+}
+
+async function doSaveJoyActivities() {
+  setLoading('joy-btn', true);
+  try {
+    const { user } = await api('PATCH', '/profile', { joyActivities: chosenJoyActivities });
+    state.user = { ...state.user, ...user };
+    localStorage.setItem('mc_user', JSON.stringify(state.user));
+    await continueAfterProfile();
+  } catch(e) {
+    toast(e.message || 'Could not save', 'err');
+  } finally {
+    setLoading('joy-btn', false);
   }
 }
 
@@ -1000,9 +1129,12 @@ function logout() {
   state.myReactions    = {};
   state.streak         = null;
   state.checkedInToday = false;
+  state.happinessPct   = null;
+  chosenJoyActivities  = [];
 
-  // Close post sheet if open
+  // Close post sheet / mind-divert sheet if open
   document.getElementById('sheet-bg').classList.remove('open');
+  document.getElementById('divert-sheet-bg').classList.remove('open');
 
   // Strip active/behind from every screen so none bleeds through
   document.querySelectorAll('.screen').forEach(s => {
@@ -1018,6 +1150,7 @@ function logout() {
   document.getElementById('join-code').value = '';
   document.getElementById('ps-name').value = '';
   document.getElementById('ps-username').value = '';
+  document.getElementById('joy-custom-input').value = '';
 
   // Reset feed / dynamic screens to loading placeholder so stale data
   // never flashes if the user logs back in during the same session
@@ -1364,9 +1497,11 @@ function moodCardHTML(item) {
     return `<button class="rxn${mine?' on':''}" onclick="toggleRxn('${item.id}','${r.key}',this)">${r.emoji} <span class="rc">${count}</span></button>`;
   }).join('');
 
-  // Nudge (only for non-anonymous, non-self)
+  // Nudge (only for non-anonymous, non-self). Rough/Low posts get a
+  // distinct "support" nudge instead of a playful one.
+  const isLow = level <= 2;
   const nudgeHTML = (!isAnon && !isOwn && item.user?.id)
-    ? `<button class="nudge-btn" onclick="doNudge('${item.user.id}',this)">👋 Nudge</button>`
+    ? `<button class="nudge-btn${isLow ? ' support' : ''}" onclick="doNudge('${item.user.id}',this)">${isLow ? '💙 Send support' : '👋 Nudge'}</button>`
     : '';
 
   return `
@@ -1465,6 +1600,7 @@ async function doPostMood() {
       level: chosenMood, note, privateNote, isAnonymous,
     });
     // Close sheet and reset
+    const postedLevel = chosenMood;
     document.getElementById('sheet-bg').classList.remove('open');
     chosenMood = null;
     document.querySelectorAll('.m-opt').forEach(o => o.classList.remove('sel'));
@@ -1475,11 +1611,71 @@ async function doPostMood() {
     document.getElementById('priv-note').style.display = 'none';
     toast('Mood posted ✓');
     await loadFeed(); // Reload with fresh data
+    // Rough/Low check-ins get a gentle, personalized diversion suggestion
+    setTimeout(() => maybeShowDivert(postedLevel), 400);
   } catch(e) {
     toast(e.message || 'Could not post mood', 'err');
   } finally {
     setLoading('post-btn', false);
   }
+}
+
+// ─────────────────────────────────────────────
+// Mind-divert — a gentle nudge toward something that helps, shown
+// after a Rough/Low check-in. Prefers the user's own "things that make
+// you feel good" list; falls back to generic grounding tasks.
+// ─────────────────────────────────────────────
+const GROUNDING_TASKS = [
+  'Take 5 slow, deep breaths',
+  'Name 3 things you can see right now',
+  'Step outside for 60 seconds',
+  'Drink a glass of water, slowly',
+  'Stretch your arms overhead for 20 seconds',
+  'Text someone "thinking of you"',
+  "Write down one thing that's okay right now",
+  'Unclench your jaw and drop your shoulders',
+];
+let divertPool     = [];
+let divertUsingJoy = false;
+let divertLastIdx  = -1;
+
+function maybeShowDivert(level) {
+  if (level > 2) return; // only for Rough(1) / Low(2)
+  // Dismiss the "Mood posted" toast first — it's bottom-anchored like this
+  // sheet and would otherwise sit overlapping its buttons for a couple seconds.
+  clearTimeout(toastT);
+  document.getElementById('toast').className = '';
+  const joy = Array.isArray(state.user?.joyActivities) ? state.user.joyActivities : [];
+  divertUsingJoy = joy.length > 0;
+  divertPool     = divertUsingJoy ? joy : GROUNDING_TASKS;
+  divertLastIdx  = -1;
+  showDivertPick();
+  document.getElementById('divert-tip').style.display        = divertUsingJoy ? 'none' : '';
+  document.getElementById('divert-switch-btn').style.display  = divertUsingJoy ? '' : 'none';
+  document.getElementById('divert-sheet-bg').classList.add('open');
+}
+
+function showDivertPick() {
+  let idx = Math.floor(Math.random() * divertPool.length);
+  if (divertPool.length > 1 && idx === divertLastIdx) idx = (idx + 1) % divertPool.length;
+  divertLastIdx = idx;
+  document.getElementById('divert-text').textContent = divertPool[idx];
+}
+
+function anotherDivertIdea() { showDivertPick(); }
+
+function switchToGroundingReset() {
+  divertUsingJoy = false;
+  divertPool     = GROUNDING_TASKS;
+  divertLastIdx  = -1;
+  showDivertPick();
+  document.getElementById('divert-tip').style.display = 'none';
+  document.getElementById('divert-switch-btn').style.display = 'none';
+}
+
+function closeDivertSheet(e) {
+  if (!e || e.target === document.getElementById('divert-sheet-bg'))
+    document.getElementById('divert-sheet-bg').classList.remove('open');
 }
 
 // ─────────────────────────────────────────────
@@ -1506,6 +1702,8 @@ async function loadHistory(days = 7) {
     const avgMood = vals.filter(v=>v>0).length
       ? (vals.filter(v=>v>0).reduce((a,b)=>a+b,0) / vals.filter(v=>v>0).length).toFixed(1)
       : '—';
+    const happinessPct = avgMood === '—' ? null : Math.round(parseFloat(avgMood) / 5 * 100);
+    state.happinessPct = happinessPct;
 
     const tabsHTML = [7,30,90].map(d =>
       `<button class="p-tab${d===days?' on':''}" onclick="loadHistory(${d})">${d} days</button>`
@@ -1514,12 +1712,12 @@ async function loadHistory(days = 7) {
     scroll.innerHTML = `
       <div class="period-row">${tabsHTML}</div>
       <div class="chart-wrap">
-        <h3>Your mood</h3>
+        <h3>Happiness Index</h3>
         <p>Daily average over ${days} days</p>
         <div class="bar-chart" id="hist-chart"></div>
       </div>
       <div class="stat-grid">
-        <div class="stat-tile"><div class="stat-val" style="color:var(--p)">${avgMood}</div><div class="stat-lbl">Avg mood (${days}d)</div></div>
+        <div class="stat-tile"><div class="stat-val" style="color:var(--p)">${happinessPct===null ? '—' : happinessPct+'%'}</div><div class="stat-lbl">Happiness Index</div></div>
         <div class="stat-tile"><div class="stat-val" style="color:#DB2777">${daysCheckedIn}</div><div class="stat-lbl">Days checked in</div></div>
         <div class="stat-tile"><div class="stat-val" style="color:#22C55E">${streak.currentStreak}</div><div class="stat-lbl">Current streak</div></div>
         <div class="stat-tile"><div class="stat-val" style="color:#F59E0B">${history.length}</div><div class="stat-lbl">Total check-ins</div></div>
@@ -1528,6 +1726,22 @@ async function loadHistory(days = 7) {
     buildBarChart('hist-chart', labels, vals);
   } catch(e) {
     scroll.innerHTML = `<div class="empty-feed"><div class="icon">😵</div><h3>Couldn't load history</h3><p>${e.message||''}</p></div>`;
+  }
+}
+
+function shareHappinessNow() { shareHappiness(state.happinessPct, state.histDays); }
+
+async function shareHappiness(pct, days) {
+  if (pct === null || pct === undefined) { toast('Check in a few times first', 'err'); return; }
+  const mood = pct >= 70 ? '🌟' : pct >= 50 ? '😊' : '💙';
+  const text = `My MoodCircle happiness index (last ${days}d): ${pct}% ${mood}`;
+  if (navigator.share) {
+    try { await navigator.share({ text, title: 'MoodCircle' }); } catch(e) { /* user cancelled — ignore */ }
+  } else if (navigator.clipboard) {
+    try { await navigator.clipboard.writeText(text); toast('Copied — share it with your circle!'); }
+    catch(e) { toast('Could not copy', 'err'); }
+  } else {
+    toast('Sharing not supported on this browser', 'err');
   }
 }
 
@@ -1649,6 +1863,11 @@ function renderProfile() {
 function openEditProfile() {
   initProfileSetup();
   go('s-profile-setup');
+}
+
+function openEditJoy() {
+  initJoySetup();
+  go('s-joy-setup');
 }
 
 function showGroupInvite() {

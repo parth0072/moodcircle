@@ -18,6 +18,8 @@ router.patch(
       .matches(/^[a-zA-Z0-9_]{3,20}$/)
       .withMessage('Username: 3–20 chars, letters/numbers/underscore only'),
     body('avatar').optional().isString(),
+    body('joyActivities').optional().isArray({ max: 12 }).withMessage('Up to 12 activities allowed'),
+    body('joyActivities.*').optional().isString(),
   ],
   validate,
   updateProfile
