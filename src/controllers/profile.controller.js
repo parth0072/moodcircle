@@ -9,7 +9,7 @@ function getProfile(req, res) {
 
 // PATCH /api/profile
 function updateProfile(req, res) {
-  const { name, username, avatar } = req.body;
+  const { name, username, avatar, joyActivities } = req.body;
   const user = users.get(req.user.id);
 
   // Username uniqueness check (case-insensitive, skip self)
@@ -25,18 +25,33 @@ function updateProfile(req, res) {
   if (name     !== undefined) user.name   = name.trim();
   if (avatar   !== undefined) user.avatar = avatar;
 
+  // "Things that make you feel good" — set during onboarding, suggested
+  // back to the user on a low mood check-in. Saving this at all (even an
+  // empty list, e.g. via Skip) marks the onboarding step as done so it
+  // isn't asked again.
+  if (joyActivities !== undefined) {
+    user.joyActivities = joyActivities
+      .map((a) => String(a).trim())
+      .filter(Boolean)
+      .slice(0, 12)
+      .map((a) => a.slice(0, 60));
+    user.joyOnboarded = true;
+  }
+
   users.set(user.id, user);
   return ok(res, { user: publicUser(user) });
 }
 
 function publicUser(u) {
   return {
-    id:        u.id,
-    phone:     u.phone,
-    name:      u.name   || null,
-    username:  u.username || null,
-    avatar:    u.avatar || null,
-    isPremium: u.isPremium,
+    id:            u.id,
+    phone:         u.phone,
+    name:          u.name   || null,
+    username:      u.username || null,
+    avatar:        u.avatar || null,
+    isPremium:     u.isPremium,
+    joyActivities: u.joyActivities || [],
+    joyOnboarded:  !!u.joyOnboarded,
   };
 }
 

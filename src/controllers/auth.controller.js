@@ -10,13 +10,15 @@ function hashPassword(password, salt) {
 
 function userPayload(u) {
   return {
-    id:          u.id,
-    email:       u.email,
-    name:        u.name      || null,
-    username:    u.username  || null,
-    avatar:      u.avatar    || null,
-    isPremium:   u.isPremium,
-    hasPassword: !!u.passwordHash,
+    id:            u.id,
+    email:         u.email,
+    name:          u.name      || null,
+    username:      u.username  || null,
+    avatar:        u.avatar    || null,
+    isPremium:     u.isPremium,
+    hasPassword:   !!u.passwordHash,
+    joyActivities: u.joyActivities || [],
+    joyOnboarded:  !!u.joyOnboarded,
   };
 }
 
