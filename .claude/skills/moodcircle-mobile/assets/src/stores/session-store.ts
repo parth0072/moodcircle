@@ -53,7 +53,11 @@ export const useSessionStore = create<SessionState>()((set, get) => ({
   async mergeUser(patch) {
     const { token, user } = get();
     if (!token || !user) return;
-    const next = { ...user, ...patch };
+    // `undefined` means "not in the answer", never "clear it": a profile response has no email.
+    const provided = Object.fromEntries(
+      Object.entries(patch).filter(([, value]) => value !== undefined),
+    );
+    const next = { ...user, ...provided };
     set({ user: next });
     await persist(token, next);
   },
