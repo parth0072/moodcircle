@@ -10,6 +10,8 @@ interface ScreenProps {
   align?: 'center' | 'start';
   /** Non-scrolling layer drawn behind the content (decorative shapes). Never receives touches. */
   decoration?: ReactNode;
+  /** Overrides the default top padding; sheets use a small one because the grabber sits above them. */
+  top?: number;
 }
 
 /**

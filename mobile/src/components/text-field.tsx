@@ -99,6 +99,7 @@ const styles = StyleSheet.create({
     borderColor: colors.borderStrong,
     borderRadius: radius.sm,
     borderCurve: 'continuous',
+    outlineWidth: 0, // the brand-coloured border already shows focus; no second browser ring
   },
   inputWithPrefix: {
     borderTopLeftRadius: 0,

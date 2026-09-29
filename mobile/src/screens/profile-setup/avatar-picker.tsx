@@ -59,7 +59,13 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   previewEmoji: { fontSize: 42, lineHeight: 52 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP, marginBottom: 24 },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: GAP,
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
   option: {
     height: 44,
     borderRadius: radius.sm,

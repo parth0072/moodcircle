@@ -38,7 +38,7 @@ export function SetPasswordScreen({ firstTime, onDone }: SetPasswordScreenProps)
   };
 
   return (
-    <Screen align="start" background="surface">
+    <Screen align="start" background="surface" top={24}>
       <View style={styles.header}>
         <AppText variant="heading">
           {firstTime ? 'Set a quick-login password' : 'Change password'}
