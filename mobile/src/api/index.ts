@@ -1,6 +1,7 @@
 import { fetch as expoFetch } from 'expo/fetch';
 
 import { useSessionStore } from '@/stores/session-store';
+import { useUiStore } from '@/stores/ui-store';
 import { getApiUrl } from '@/utils/env';
 
 import { createApiClient } from './client';
@@ -8,6 +9,7 @@ import { queryClient } from './query-client';
 
 /** End the session everywhere: memory, storage, and every cached query of the old user. */
 export async function endSession() {
+  useUiStore.getState().clearPrompts();
   await useSessionStore.getState().signOut();
   queryClient.clear();
 }
