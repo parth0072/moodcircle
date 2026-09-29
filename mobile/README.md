@@ -21,12 +21,25 @@ base path if the server uses one: the deployed HTTPS URL (for example
 `https://your-domain/moodcircle/api`) or your computer's Wi-Fi address
 (`http://192.168.x.x:3000/api`). Never `localhost`: on a phone that means the phone itself.
 
+## What works today
+
+Sign up and sign in with an emailed code or a password, profile setup (name, username, avatar), "what makes you feel good",
+and the quick-login password offer. After that you land on a placeholder Home with a Sign out button: groups, the mood feed,
+check-in and the other tabs are the next slices. None of it has been run on a real iPhone yet.
+
 ## Checks
 
 ```bash
 npm run typecheck   # run `npx expo start` once first so the route types exist
 npm run lint        # add -- --fix to format
 npm test
+```
+
+Screens can also be exercised in a headless browser against a throwaway copy of the real backend (a web export, not the
+iOS renderer):
+
+```bash
+node ../.claude/skills/moodcircle-mobile/scripts/verify-web.mjs --project . --flow verify/flows/auth.mjs
 ```
 
 ## Notes

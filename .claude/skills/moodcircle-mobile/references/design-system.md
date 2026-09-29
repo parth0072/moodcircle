@@ -2,9 +2,11 @@
 
 The look is the Moodbloom redesign already shipped on the web (`public/css/app.css`, merged in PR #5): warm
 cream, navy ink, Fraunces headlines, hand-drawn line-art mood faces, flat surfaces with 1 px borders. The native
-app reproduces it; it does not reinterpret it. The tokens and the first two components are verified templates in
-`assets/src/theme/` and `assets/src/components/`, rendered on the web export and compared with the reference
-(cream background, serif headlines, five faces, Feather icons, pill buttons, streak card all match).
+app reproduces it; it does not reinterpret it. The tokens live in `mobile/src/theme/` and the shared components in
+`mobile/src/components/` (Phase 0's seed is in `assets/`). The sign-in and onboarding screens built on them were rendered on
+the web export and compared side by side with the original web screens; they match apart from the deliberate changes listed
+under "Deliberate differences from the web screens" below. Fonts in that comparison were fallbacks (Google Fonts is blocked
+in the sandbox), so type has not been judged on a device.
 
 ## Contents
 - Rules
@@ -42,7 +44,7 @@ From Expo's `expo-design-system` skill, adopted as written:
 
 ## Tokens
 
-Source: `assets/src/theme/`. Every value below is copied from the `:root` block of `public/css/app.css`.
+Source: `mobile/src/theme/`. Every value below is copied from the `:root` block of `public/css/app.css`.
 
 | Token | Value | Web var | Use |
 |---|---|---|---|
@@ -75,15 +77,19 @@ bold. Roles in `type`:
 |---|---|---|
 | `displayHero` | Fraunces 700, 60, tracking -2 | the streak number |
 | `displayLg` | Fraunces 600, 30 | app title on sign-in |
-| `displayMd` | Fraunces 600, 24 | OTP and setup headings |
+| `displayTitle` | Fraunces 600, 27 | profile and joy setup titles |
+| `displayMd` | Fraunces 600, 24 | code-entry heading |
 | `stat` | Fraunces 600, 28, tabular | stat tiles |
 | `score` | Fraunces 600, 26, tabular | vibe score |
 | `quote` | Fraunces 600, 17, line 24 | mind-divert card |
 | `displaySm` | Fraunces 600, 16 | check-in bar title, chart headings |
 | `moodLabel` | Fraunces 600, 13 | mood chips and tile labels |
-| `title` | DM Sans 700, 16 | header titles |
-| `body` / `bodyStrong` | DM Sans 400 / 600, 15 | notes, names |
+| `heading` | DM Sans 700, 22 | sheet titles (password offer), joy step heading |
+| `title` | DM Sans 700, 16 | header titles, digits in the code boxes |
+| `body` / `bodyStrong` | DM Sans 400 / 600, 15 | notes, names, button labels |
+| `bodySm` | DM Sans 400, 14 | secondary explanatory lines |
 | `label` | DM Sans 500, 13 | field labels, chips, buttons small |
+| `link` / `linkLg` | DM Sans 600, 13 / 14 | text buttons, selected chip label |
 | `caption` | DM Sans 400, 12 | timestamps, sub-lines |
 | `micro` | DM Sans 500, 10 | tab labels, tags |
 
@@ -97,15 +103,20 @@ Flat. Surfaces are white on the cream background with a 1 px `border`; there are
 
 ## Components to build (specs from the web CSS)
 
-Build these as they are needed by a slice, each in `components/`, kebab-case, one named export.
+Build these as they are needed by a slice, each in `components/`, kebab-case, one named export. Rows marked **built** exist in
+`mobile/src/components/`: use them, and extend a variant rather than adding a second component.
 
 | Component | Spec (web class) |
 |---|---|
-| Button | pill (`radius.full`), padding 13x18, text `bodyStrong` (15/600); primary = brand bg + white text; outline = surface bg + `borderStrong` 1 px; full-width variant; disabled opacity .5; pressed opacity .8; loading shows a spinner and keeps the label available to accessibility (`.btn`) |
-| IconButton | 34x34, radius `sm`, 1 px `border`, surface bg, icon in `textSecondary` (`.icon-btn`) |
-| Field / Input | label 13/500 `textSecondary`; input padding 11x13, surface bg, 1 px `borderStrong`, radius `sm`, text 15, focus border `brand`, placeholder `textTertiary` (`.field`, `.input`) |
+| AppText **(built)** | the one way screens render text: `variant` (a `type` role) plus `color` (`text`, `textSecondary`, `textTertiary`, `brand`, `onBrand`, `danger`); `style` merges last. Nested text picks a different role instead of overriding `fontFamily` |
+| Screen **(built)** | scrolling form container: `ScrollView` with `contentInsetAdjustmentBehavior="automatic"`, `automaticallyAdjustKeyboardInsets`, `keyboardShouldPersistTaps="handled"`, 24 pt side padding; props `background` (`surface` or `background`), `align` (`center` or `start`), `decoration` (the sign-in blobs), `top` (small for sheets, the grabber sits above) |
+| Button **(built)** | pill (`radius.full`), `minHeight` 48, text `bodyStrong` (15/600); primary = brand bg + white text; outline = surface bg + `borderStrong` 1 px; stretches to full width; disabled opacity .5; pressed opacity .8; loading shows a spinner and reports `busy` to accessibility (`.btn`) |
+| TextButton **(built)** | link-styled action, `link` (13/600) or `linkLg` (14/600) in `brand`, `hitSlop` 10 |
+| IconButton **(built)** | 34x34, radius `sm`, 1 px `border`, surface bg, icon in `textSecondary`, `hitSlop` 6, `label` is required (`.icon-btn`) |
+| TextField **(built)** | label 13/500 `textSecondary` (`hideLabel` keeps it for screen readers only); input `minHeight` 46, surface bg, 1 px `borderStrong`, radius `sm`, text 15, focus border `brand`, error border `accents.danger`, placeholder `textTertiary`; optional `prefix` cell (the `@` of the username); inline error below it with `accessibilityRole="alert"`; `outlineWidth: 0` so the browser focus ring does not show on the web build (`.field`, `.input`) |
+| OtpInput **(built)** | one real, transparent `TextInput` laid over six decorative boxes (so paste, autofill and backspace work natively); digits only; `textContentType="oneTimeCode"` so iOS offers the emailed code; filled box `brandTint`, active box `brand` border |
 | Card | surface, 1 px `border`, radius `md`, padding 14, gap 10 (`.mcard`, `.stat-tile`, `.chart-wrap`) |
-| Chip | pill, padding 9x14, 1.5 px `borderStrong`, bg `background`, text `textSecondary` 13/500; selected = `brandTint` bg, `brand` border and text, 600 (`.chip`, `.chip.sel`) |
+| Chip **(built)** | pill, padding 9x14, 1.5 px `borderStrong`, bg `background`, text `textSecondary` 13/500; selected = `brandTint` bg, `brand` border and text, 600 (`.chip`, `.chip.sel`); reports `selected` (used as a checkbox on the joy screen) |
 | Segmented pill tabs | 7 / 30 / 90 days: pill padding 6x14, selected = brand bg, white text (`.p-tab`) |
 | MoodPicker | five equal tiles (`flex:1`, gap 6, padding 10/4/12), each a 34x34 circle in `moodColors[l].tint` holding a 22 px face, over a 10/600 `textSecondary` label; border 1.5 `borderStrong`, radius `sm`, bg `background`; selected = `brandTint` bg and `brand` border (`.m-opt`); radio semantics |
 | MoodChip | pill, padding 4x10, `moodColors[l].tint` bg, small face + label (`.mood-chip`). Use `colors.ink` for the label of levels 2 and 3 |
@@ -120,6 +131,18 @@ Build these as they are needed by a slice, each in `components/`, kebab-case, on
 | Tab bar | surface, top 1 px `border`, four tabs (Home, History, Streak, Me) with 22 px icons at stroke 1.7 and 10/500 labels, inactive `textTertiary`, active `brand`; centre "+" 48x48, radius `md`, brand bg, white plus (`.bottom-nav`, `.nav-fab`) |
 | EmptyState / ErrorState | centred icon or face, heading, one line, the next action; ErrorState always has Retry (`.empty-feed`) |
 | Toggle | use the platform `Switch` (web `.tgl` is 40x22) |
+
+### Deliberate differences from the web screens
+
+The built sign-in and onboarding screens differ from `public/` only here; say so in a PR description, and let the user overrule.
+
+| Difference | Reason |
+|---|---|
+| No "Skip for now" on profile setup | a display name is required (`roadmap.md`, decisions) |
+| Fields 46 pt and buttons 48 pt tall | touch targets: Apple's guideline is 44 pt |
+| Helper text in `textSecondary` (the web uses `textTertiary`) | `textTertiary` is 2.3:1, decoration only |
+| Errors appear inline in `accents.danger` (`#DC2626`), not as toasts in `#EF4444` | contrast (4.8:1 versus 3.8:1) and the message stays next to what caused it |
+| The password offer is a `formSheet` opened after onboarding, with a Skip button | the web opened it as a bottom sheet about 400 ms after a code sign-in; here it queues behind the joy step |
 
 ## Icons and mood faces
 

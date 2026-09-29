@@ -9,9 +9,14 @@ The web app (`public/`, backend in `src/`) is finished and deployed. This skill 
 one standard architecture, one pinned stack, code that is already proven, and a way to verify work in a container that has
 no iPhone. It exists so that every session starts from the same decisions instead of re-deriving them.
 
-**Status (2026-09-29): nothing is scaffolded.** There is no `mobile/` folder. The user asked for research and this skill
-first and said not to start building. Do not scaffold until they say go. `references/roadmap.md` has the phases, the
-scaffold procedure and the open decisions.
+**Status (2026-09-29): Phases 0 and 1 are built** on stacked branches `feat/mobile-scaffold` and `feat/mobile-sign-in`
+(check `git branch -r` and `main` for what has merged): the `mobile/` Expo app boots, gates three route groups, and has
+sign-in (code and password), verification, profile setup, "what makes you feel good" and the quick-login password offer.
+Phase 2 (groups and the Home feed) is next and waits for the user's go-ahead. Nothing has run on an iPhone.
+`references/roadmap.md` has the phases, decisions taken and the open decisions.
+
+**`mobile/` is now the source of truth.** `assets/` only seeds a brand-new scaffold; never copy it over an existing
+`mobile/src` (it would replace the real screens with placeholders). Reuse components, hooks and screens from `mobile/src`.
 
 If the task is about the web app only (`public/`, `src/`), this skill does not apply.
 
@@ -25,9 +30,11 @@ If the task is about the web app only (`public/`, `src/`), this skill does not a
    one file". Small single-purpose files, routes only in `src/app`.
 3. **Stay on the pinned stack.** Add packages with `npx expo install`, never bump SDK, React or React Native by hand, and do
    not use npm's `latest` for them (it is newer than SDK 57 supports). `references/stack-and-versions.md`.
-4. **Copy the verified templates, do not rewrite them from memory.** `assets/` holds the API client, session store, auth gate,
-   theme tokens, icons and mood faces, each with tests. The web app shipped two bugs in exactly this area (a network blip signed
-   users out; a returning user's login was hijacked into onboarding), and the templates plus flows now guard against both.
+4. **Reuse what exists, do not rewrite it from memory.** Look in `mobile/src` first (`components/`, `hooks/`, `api/`,
+   `theme/`, `test-utils/`) and extend it; a second copy of a button or a fetch wrapper is drift. On a fresh scaffold, seed from
+   `assets/` (API client, session store, auth gate, tokens, icons, mood faces, each with tests). The web app shipped two bugs
+   in exactly this area (a network blip signed users out; a returning user's login was hijacked into onboarding), and the
+   tests plus flows guard against both.
 5. **The server owns the truth; only a real 401 signs out.** Never derive "checked in today" or scores on the client; never sign
    out on a network error, a 5xx, an HTML error page or a wrong password.
 6. **Verify, then report honestly.** This container cannot run iOS. Say which layers ran and which did not, and never write
@@ -67,8 +74,9 @@ profile setup, never a gate. Full detail: `references/architecture.md`.
 
 ## Workflow for any mobile task
 
-1. **Orient.** Does `mobile/` exist? Which phase is this (`references/roadmap.md`)? Read the web module it ports (the feature
-   map names it) and the matching part of `references/api-contract.md`.
+1. **Orient.** `git fetch`, then check whether the earlier slice branches merged and start from the right base. Which phase
+   is this (`references/roadmap.md`)? Read the web module it ports (the feature map names it), the matching part of
+   `references/api-contract.md`, and the existing `mobile/src` pieces the slice will reuse.
 2. **Research** what the slice touches (rule 1). If the official Expo plugin is enabled in the session, its skills
    (`expo-router`, `expo-data-fetching`, `expo-native-ui`, `expo-design-system`) are worth loading; this skill does not depend on it.
 3. **Settle open decisions** that block the slice. Ask the user only for what changes the outcome (name and bundle id,
@@ -86,7 +94,7 @@ profile setup, never a gate. Full detail: `references/architecture.md`.
 ## Commands (from `mobile/`, `S=../.claude/skills/moodcircle-mobile/scripts`)
 
 ```bash
-node $S/typegen.mjs .                        # once per fresh checkout: expo-env.d.ts and typed-route files
+node $S/typegen.mjs . [--force]              # fresh checkout: expo-env.d.ts and typed-route files (--force after route changes)
 npx tsc --noEmit
 EXPO_OFFLINE=1 CI=1 npx expo lint            # add --fix for Prettier
 npx jest
@@ -97,22 +105,19 @@ npx expo install --check                     # after dependency changes; `npx ex
 
 `EXPO_OFFLINE=1` is needed for any Expo CLI command here because `api.expo.dev` is blocked; the scripts set it themselves.
 
-## What is verified and bundled
+## What exists and where
 
 | Path | What it is |
 |---|---|
-| `assets/src/api/` | client (envelope, only-401 sign-out, timeout, cancellation), `ApiError`, zod boundary, query client, zod schemas for every endpoint |
-| `assets/src/stores/session-store.ts` | hydration, sign in, merge user, sign out, `selectStatus` |
-| `assets/src/app/_layout.tsx` | fonts, splash, hydration gate, `Stack.Protected` |
-| `assets/src/theme/`, `components/` | Moodbloom tokens (contrast-tested), `Icon`, `MoodFace` |
-| `assets/src/utils/` | env, IST dates, secure storage with a web stand-in |
-| `assets/config/` | `eslint.config.js`, `.prettierrc`, `tsconfig.json` (with `types: ["jest"]`), `.env.example` |
+| `mobile/src/` | the app: source of truth from Phase 1 on (API client and auth hooks, stores, theme, shared components, sign-in and onboarding screens, routes) |
+| `mobile/verify/flows/` | the app's own web-export flows (`auth`, `auth-returning`); each slice adds one |
+| `assets/src/`, `assets/config/` | seed for a **fresh** scaffold only: API client and schemas, session store, gate, tokens, `Icon`, `MoodFace`, utils, lint/format/tsconfig. Same code that Phase 0 started from, with its tests |
 | `scripts/typegen.mjs` | generates the git-ignored files `tsc` needs |
-| `scripts/verify-web.mjs` + `flows/` | throwaway backend, web export, same-origin proxy, Playwright flows (`smoke`, `scaffold-check`, `auth-gate`, `session-resilience`) |
+| `scripts/verify-web.mjs` + `flows/` | throwaway backend, web export, same-origin proxy, Playwright; flow templates `smoke`, `scaffold-check` (Phase 0 only), `auth-gate.example`, `session-resilience.example` |
 | `scripts/contract-check.mjs` | proves the schemas and error codes against the real backend |
 
-Copy with `cp -R .claude/skills/moodcircle-mobile/assets/src/. mobile/src/` (details in `references/architecture.md`). All of it
-passed type-check, lint, 37 unit tests, the web flows and the contract check on 2026-09-29 against a throwaway SDK 57 app.
+Seeding a scaffold: `references/roadmap.md`, Phase 0. Against the built app on 2026-09-29: type-check, lint, 100 unit tests in 19
+suites, both web flows and the contract check were green (web export only, nothing on iOS).
 
 ## Read next
 
@@ -129,10 +134,12 @@ passed type-check, lint, 37 unit tests, the web flows and the contract check on 
 ## Traps that already cost time
 
 - `tsc` says `describe`/`expect` are undefined: TypeScript 6 needs `"types": ["jest"]` (shipped in `assets/config/tsconfig.json`).
-- `tsc` cannot find route types: run `typegen.mjs`; only the dev server writes them.
+- `tsc` cannot find route types: run `typegen.mjs` (add `--force` after adding or renaming a route file, or `router.push('/new')`
+  is a compile error); only the dev server writes them.
 - The untouched template fails its own lint (`use-color-scheme.web.ts`): it is deleted at scaffold, we are light-only.
 - Under Jest, `expo/fetch` does no real I/O: inject a stub `fetch` into the client.
-- `jest.mock` factories may only use variables named `mock*`; RNTL 14's `render` is async.
+- `jest.mock` factories may only use variables named `mock*`; RNTL 14's `render` is async; `toHaveTextContent('str')` must
+  match the WHOLE text (use a regex for a substring); test query clients need `gcTime: Infinity` or Jest warns about a leaked worker.
 - A phone cannot reach `localhost`: `EXPO_PUBLIC_API_URL` must be a LAN IP or the deployed HTTPS URL.
 - The backend echoes the OTP whenever `NODE_ENV` is not `production`: the app must never read it.
 - Do not put tests, types or helpers in `src/app`; every file there becomes a route.
