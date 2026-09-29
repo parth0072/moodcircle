@@ -86,6 +86,24 @@ describe('session store', () => {
     });
   });
 
+  it('treats undefined fields in a patch as absent, so a profile answer cannot wipe the email', async () => {
+    await useSessionStore.getState().signIn('tok', complete);
+    await useSessionStore
+      .getState()
+      .mergeUser({ name: 'Asha K', email: undefined, hasPassword: undefined });
+    expect(useSessionStore.getState().user).toMatchObject({
+      name: 'Asha K',
+      email: 'a@b.co',
+      hasPassword: true,
+    });
+  });
+
+  it('still lets a patch set a field to null', async () => {
+    await useSessionStore.getState().signIn('tok', complete);
+    await useSessionStore.getState().mergeUser({ avatar: null });
+    expect(useSessionStore.getState().user?.avatar).toBeNull();
+  });
+
   it('drops a token that has no readable user snapshot', async () => {
     mockMemory.set('mc.token', 'tok');
     mockMemory.set('mc.user', '{not json');
