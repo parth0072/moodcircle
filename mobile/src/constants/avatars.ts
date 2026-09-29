@@ -1,0 +1,21 @@
+/** The emoji avatars offered at profile setup (AVATARS in the web's public/js/onboarding.js). */
+export const AVATARS = [
+  '😊',
+  '😄',
+  '😎',
+  '🤗',
+  '🥳',
+  '😴',
+  '🤔',
+  '😇',
+  '🤩',
+  '😜',
+  '🥸',
+  '🧐',
+  '👻',
+  '🦊',
+  '🐼',
+  '🌟',
+  '🎯',
+  '🚀',
+] as const;

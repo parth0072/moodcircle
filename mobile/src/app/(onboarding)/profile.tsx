@@ -1,12 +1,7 @@
-import { Text, View } from 'react-native';
+import { ProfileSetupScreen } from '@/screens/profile-setup';
 
-import { colors, spacing, type } from '@/theme';
-
-// PHASE 0 PLACEHOLDER. Phase 1 replaces this with profile setup (name, username, avatar).
-export default function Profile() {
-  return (
-    <View style={{ flex: 1, padding: spacing[6], backgroundColor: colors.background }}>
-      <Text style={[type.displayMd, { color: colors.text }]}>Profile setup (placeholder)</Text>
-    </View>
-  );
+// After a first save the session has a name, the auth gate moves on, and the queued one-time
+// prompts (joy, then password) are shown by the signed-in area.
+export default function ProfileRoute() {
+  return <ProfileSetupScreen firstSetup />;
 }
