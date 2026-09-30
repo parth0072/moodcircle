@@ -29,6 +29,11 @@ export default function AppLayout() {
       <Stack.Screen name="insights" />
       <Stack.Screen name="profile" />
       <Stack.Screen name="edit-profile" />
+      <Stack.Screen name="groups" />
+      <Stack.Screen name="create-group" />
+      <Stack.Screen name="join-group" />
+      <Stack.Screen name="group/[id]" />
+      <Stack.Screen name="share-mood" options={{ presentation: 'fullScreenModal' }} />
       <Stack.Screen
         name="set-password"
         options={{
