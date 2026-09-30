@@ -4,7 +4,7 @@
  * never put a secret in one.
  */
 export function resolveApiUrl(value: string | undefined, isWeb: boolean): string {
-  if (!value) throw new Error('EXPO_PUBLIC_API_URL is not set (copy mobile/.env.example to .env)');
+  if (!value) throw new Error('EXPO_PUBLIC_API_URL is not set (see mobile/.env.example)');
   const url = value.replace(/\/+$/, '');
   // A relative URL only works in a browser; scripts/verify-web.mjs builds with "/api".
   if (!isWeb && !/^https?:\/\//.test(url)) {

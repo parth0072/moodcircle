@@ -11,11 +11,14 @@ git fetch origin && git checkout main && git pull
 bash run-mobile.sh
 ```
 
-The script checks Node.js and Xcode (and offers to install or set up what is missing), installs the dependencies, starts a
-local test copy of the API, and opens the app in the iOS Simulator. The test server sends no emails: the sign-in code is
-printed in the terminal as `>>> Sign-in code: 123456`. Ctrl+C stops everything. Other options: `--phone` (iPhone with Expo
-Go, see below), `--api https://your-domain.com/moodcircle/api` (your deployed server instead of the local one), `--reset`
-(empty the test database to see sign-up again), `--help`.
+The script checks Node.js and Xcode (and offers to install or set up what is missing), installs the dependencies, and opens
+the app in the iOS Simulator. The app talks to your live server, the address in `mobile/.env.development`
+(`https://api.alphabyteinnovation.com/moodcircle/api`). The script checks that server first and warns if it has not been
+updated with the mood entries yet: deploy the latest `main` there with `deploy.sh`. Ctrl+C stops everything.
+
+Other options: `--local` (a throwaway test server on this Mac instead: it sends no emails, and the sign-in code is printed in
+the terminal as `>>> Sign-in code: 123456`), `--api https://other-server/api` (another server), `--phone` (iPhone with Expo
+Go, see below), `--reset` (with `--local`: empty the test database to see sign-up again), `--help`.
 
 ## Run it on your iPhone
 
@@ -36,18 +39,17 @@ a computer with Node.js 22.13 or newer, and the iPhone on the same Wi-Fi.
 
    ```bash
    cd mobile
-   cp .env.example .env     # Windows: copy .env.example .env. Then set EXPO_PUBLIC_API_URL inside it
    npm install
    npx expo start
    ```
 
 4. Scan the QR code with the iPhone **Camera** app and tap the banner to open Expo Go.
 
-`EXPO_PUBLIC_API_URL` must be an address the phone can reach, including `/api` and the
-base path if the server uses one: the deployed HTTPS URL (for example
-`https://your-domain/moodcircle/api`) or your computer's Wi-Fi address
-(`http://192.168.x.x:3000/api`). Never `localhost`: on a phone that means the phone itself. To check the address, open
-`<that address>/health` in Safari on the iPhone: it must show `{"ok":true}`. After changing `.env`, restart with
+The app already points at your live server (`EXPO_PUBLIC_API_URL` in `.env.development`), which a phone can reach. To use
+another server, put `EXPO_PUBLIC_API_URL=...` in `mobile/.env.local` (it is not in git; a value there wins). It must be an
+address the phone can reach, including `/api` and the base path if the server uses one, for example your computer's Wi-Fi
+address (`http://192.168.x.x:3000/api`). Never `localhost`: on a phone that means the phone itself. To check an address,
+open `<that address>/health` in Safari on the iPhone: it must show `{"ok":true}`. After changing an env file, restart with
 `npx expo start --clear`. The sign-in code is emailed by the server; if the server has no email set up, it prints
 `[OTP] ...` in its log instead.
 
@@ -63,8 +65,8 @@ The screens follow the **Moodbloom** design canvas (Claude Design, "Moodbloom â€
 - **Insights:** Week or Month, bubbles sized by how often each emotion showed up, the last seven days, and a balance score.
 - **Profile:** your totals (streak, check-ins, top mood), the daily 8:30 pm reminder, edit name, Log out.
 
-Entries are stored on the server (personal entries API, `/api/entries`), so a live server must be deployed from the latest
-`main`; `bash run-mobile.sh` starts a local server that already has it. Left out on purpose: the
+Entries are stored on the server (personal entries API, `/api/entries`), so the live server must be deployed from the latest
+`main`; `bash run-mobile.sh --local` starts a test server that already has it. Left out on purpose: the
 design's soundscapes and music player, Apple/Google sign-in (the server has neither), dark mode. None of it has been run on
 a real iPhone yet.
 
