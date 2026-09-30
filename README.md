@@ -79,18 +79,37 @@ All group routes require `Authorization: Bearer <token>`.
 |--------|------|-------------|
 | POST | `/api/groups` | Create a group, get a 6-char invite code |
 | POST | `/api/groups/join` | Join a group using an invite code |
+| GET | `/api/groups/preview?code=A3F9C1` | See what a code opens (name, colour, creator, member count) without joining |
+| GET | `/api/groups/overview` | Your groups with their members and what was posted today (one call for a groups screen) |
 | DELETE | `/api/groups/:groupId/leave` | Leave a group |
 | GET | `/api/groups/:groupId` | Get group details and full member list |
 
-**Request — create group**
+**Request — create group** (`color` and `showNotes` are optional)
 ```json
-{ "name": "Close Friends" }
+{ "name": "Close Friends", "color": "sage", "showNotes": false }
 ```
 
-**Request — join group**
+**Request — join group** (`autoShare` is optional)
 ```json
-{ "inviteCode": "A3F9C1" }
+{ "inviteCode": "A3F9C1", "autoShare": true }
 ```
+
+**Response — preview** (`createdByName` is `null` when the creator has no name; `id` is `null` unless you are already a member)
+```json
+{ "group": { "id": null, "name": "Close Friends", "color": "sage", "showNotes": false, "createdByName": "Kabir", "memberCount": 6, "isMember": false } }
+```
+
+Every group in a response also carries `color`, `showNotes` and `autoShare` (for the person asking).
+
+- `color` is one of `blue` (default), `sage`, `pink`, `peach`, `mint`.
+- `showNotes: false` makes a "mood only" group: other members see each person's mood and time but not their words. The
+  author still sees their own note. Groups made before this setting show notes.
+- `autoShare: true` ("Share my check-ins here") makes the group show the latest thing the member logged today in their
+  [personal journal](#personal-entries-the-moodbloom-journal), and nothing on a day they logged nothing. It follows edits and
+  deletes of those entries, shares only the emotion (never the journal note), and never overrides a post the member
+  wrote themselves. It is switched on when joining and off again when leaving.
+- `GET /api/groups/overview` returns, for each group, everything above plus `members` (`id`, `name`, `username`) and `today`
+  (one item per post today: `userId` (`null` when anonymous), `emotion`, `createdAt`), newest first.
 
 ---
 
@@ -102,15 +121,20 @@ All group routes require `Authorization: Bearer <token>`.
 | GET | `/api/groups/:groupId/moods/today` | Get today's feed + vibe score |
 | GET | `/api/groups/:groupId/moods/history?days=7` | Mood history (7 / 30 / 90 days) |
 
-**Request — post mood**
+**Request — post mood** (send an `emotion` — `joy`, `calm`, `sad`, `worry`, `anger` or `meh` — or a `level` from 1 to 5)
 ```json
 {
-  "level": 4,
+  "emotion": "calm",
   "note": "Feeling great today!",
   "privateNote": "Actually stressed but hiding it",
   "isAnonymous": false
 }
 ```
+
+Every post is stored with a `level` (for the vibe score); with an `emotion` it is worked out as joy 5, calm 4, meh 3, worry 2,
+sad 2, anger 1. Every feed item has both `level` and `emotion`; for a post made with only a level, `emotion` is the closest
+one (5 joy, 4 calm, 3 meh, 2 worry, 1 sad). A post that was shared automatically (see `autoShare`) is replaced, not refused,
+when the member posts their own that day.
 
 **Response — today feed**
 ```json
@@ -123,7 +147,8 @@ All group routes require `Authorization: Bearer <token>`.
 ```
 
 > `privateNote` is stored but **never** returned in any API response.  
-> Anonymous posts hide the user identity in all feed responses.
+> Anonymous posts hide the user identity in all feed responses.  
+> In a group with `showNotes: false`, `note` is an empty string on other people's posts.
 
 ---
 
