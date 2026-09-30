@@ -7,17 +7,17 @@ import { Screen } from '@/components/screen';
 import { TextField } from '@/components/text-field';
 import { useSetPassword } from '@/hooks/use-auth';
 import { describeError } from '@/utils/error-message';
-
-const MIN_LENGTH = 6;
+import { MIN_PASSWORD_LENGTH } from '@/utils/password-strength';
 
 interface SetPasswordScreenProps {
-  /** True when the account has no password yet: the sheet is an offer that can be skipped. */
-  firstTime: boolean;
   onDone: () => void;
 }
 
-/** Quick-login password sheet (web `#pw-sheet`): set a password so the next sign-in needs no code. */
-export function SetPasswordScreen({ firstTime, onDone }: SetPasswordScreenProps) {
+/**
+ * Choose a password, as a sheet after "Forgot password?" (or when saving the sign-up password
+ * failed). The user is already signed in, so it can always be skipped.
+ */
+export function SetPasswordScreen({ onDone }: SetPasswordScreenProps) {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -25,8 +25,9 @@ export function SetPasswordScreen({ firstTime, onDone }: SetPasswordScreenProps)
 
   const submit = async () => {
     if (setPasswordMutation.isPending) return;
-    if (password.length < MIN_LENGTH)
-      return setError(`Password must be at least ${MIN_LENGTH} characters`);
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      return setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
+    }
     if (password !== confirm) return setError('Passwords do not match');
     setError(null);
     try {
@@ -38,24 +39,22 @@ export function SetPasswordScreen({ firstTime, onDone }: SetPasswordScreenProps)
   };
 
   return (
-    <Screen align="start" background="surface" top={24}>
+    <Screen align="start" background="background" top={24}>
       <View style={styles.header}>
-        <AppText variant="heading">
-          {firstTime ? 'Set a quick-login password' : 'Change password'}
+        <AppText variant="titleLg" accessibilityRole="header">
+          Choose a password
         </AppText>
-        <AppText variant="label" color="textSecondary">
-          {firstTime
-            ? 'Next time you can sign in instantly — no OTP needed.'
-            : 'Update your password for quick login.'}
+        <AppText variant="bodySm" color="textSecondary">
+          Use it next time to log in without waiting for a code.
         </AppText>
       </View>
       <View style={styles.form}>
         <TextField
           label="New password"
+          secure
           value={password}
           onChangeText={setPassword}
-          placeholder="At least 6 characters"
-          secureTextEntry
+          placeholder={`At least ${MIN_PASSWORD_LENGTH} characters`}
           autoCapitalize="none"
           autoComplete="new-password"
           textContentType="newPassword"
@@ -63,10 +62,10 @@ export function SetPasswordScreen({ firstTime, onDone }: SetPasswordScreenProps)
         />
         <TextField
           label="Confirm password"
+          secure
           value={confirm}
           onChangeText={setConfirm}
           placeholder="Repeat password"
-          secureTextEntry
           autoCapitalize="none"
           autoComplete="new-password"
           textContentType="newPassword"
@@ -78,8 +77,8 @@ export function SetPasswordScreen({ firstTime, onDone }: SetPasswordScreenProps)
             {error}
           </AppText>
         ) : null}
-        <Button title="Set Password" onPress={submit} loading={setPasswordMutation.isPending} />
-        {firstTime ? <Button title="Skip for now" variant="outline" onPress={onDone} /> : null}
+        <Button title="Save password" onPress={submit} loading={setPasswordMutation.isPending} />
+        <Button title="Not now" variant="outline" onPress={onDone} />
       </View>
     </Screen>
   );

@@ -1,14 +1,13 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/components/app-text';
 import { Button } from '@/components/button';
-import { IconButton } from '@/components/icon-button';
 import { OtpInput } from '@/components/otp-input';
+import { RoundButton } from '@/components/round-button';
 import { Screen } from '@/components/screen';
 import { TextButton } from '@/components/text-button';
-import { useRequestOtp, useVerifyOtp } from '@/hooks/use-auth';
+import { useRequestOtp, useVerifyOtp, type VerifyFlow } from '@/hooks/use-auth';
 import { fontFamily } from '@/theme';
 import { describeError } from '@/utils/error-message';
 
@@ -16,16 +15,22 @@ const CODE_LENGTH = 6;
 
 interface VerifyScreenProps {
   email: string;
+  /** 'signup' finishes creating the account; 'forgot' signs in and then offers a new password. */
+  flow: VerifyFlow;
   onBack: () => void;
 }
 
+const INTRO: Record<VerifyFlow, string> = {
+  signup: 'Enter the 6-digit code we sent to finish creating your account.',
+  forgot: 'Enter the 6-digit code we sent to log in. You can then choose a new password.',
+};
+
 /** The six-digit code step. Success signs in; the auth gate then leaves this screen by itself. */
-export function VerifyScreen({ email, onBack }: VerifyScreenProps) {
-  const insets = useSafeAreaInsets();
+export function VerifyScreen({ email, flow, onBack }: VerifyScreenProps) {
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const verify = useVerifyOtp();
+  const verify = useVerifyOtp(flow);
   const resend = useRequestOtp();
 
   const submit = async () => {
@@ -53,66 +58,60 @@ export function VerifyScreen({ email, onBack }: VerifyScreenProps) {
   };
 
   return (
-    <View style={styles.root}>
-      <Screen>
-        <View style={styles.header}>
-          <AppText variant="displayMd">Enter OTP</AppText>
-          <AppText variant="bodySm" color="textSecondary" style={styles.sub}>
-            {'Sent to '}
-            <AppText variant="bodySm" style={styles.email} selectable>
-              {email}
-            </AppText>
-          </AppText>
-        </View>
+    <Screen background="background" align="start">
+      <View style={styles.back}>
+        <RoundButton icon="chevron-left" label="Back" onPress={onBack} />
+      </View>
 
-        <View style={styles.form}>
-          <OtpInput
-            value={code}
-            onChange={setCode}
-            length={CODE_LENGTH}
-            autoFocus
-            editable={!verify.isPending}
+      <AppText variant="headline" accessibilityRole="header">
+        Check your email
+      </AppText>
+      <AppText color="textSecondary" style={styles.sub}>
+        {INTRO[flow]}
+      </AppText>
+      <AppText color="textSecondary" style={styles.email} selectable>
+        {`Sent to ${email}`}
+      </AppText>
+
+      <View style={styles.form}>
+        <OtpInput
+          value={code}
+          onChange={setCode}
+          length={CODE_LENGTH}
+          autoFocus
+          editable={!verify.isPending}
+        />
+        {error ? (
+          <AppText variant="label" color="danger" accessibilityRole="alert">
+            {error}
+          </AppText>
+        ) : null}
+        {notice ? (
+          <AppText variant="label" color="textSecondary" accessibilityRole="alert">
+            {notice}
+          </AppText>
+        ) : null}
+        <Button title="Verify" onPress={submit} loading={verify.isPending} />
+        <View style={styles.resend}>
+          <AppText variant="input" color="textSoft">
+            {"Didn't get it? "}
+          </AppText>
+          <TextButton
+            title="Resend"
+            size="large"
+            onPress={sendAgain}
+            disabled={resend.isPending || verify.isPending}
           />
-          {error ? (
-            <AppText variant="label" color="danger" accessibilityRole="alert">
-              {error}
-            </AppText>
-          ) : null}
-          {notice ? (
-            <AppText variant="label" color="textSecondary" accessibilityRole="alert">
-              {notice}
-            </AppText>
-          ) : null}
-          <Button title="Verify" onPress={submit} loading={verify.isPending} />
-          <View style={styles.resend}>
-            <AppText variant="bodySm" color="textSecondary">
-              {"Didn't get it? "}
-            </AppText>
-            <TextButton
-              title="Resend"
-              size="medium"
-              onPress={sendAgain}
-              disabled={resend.isPending || verify.isPending}
-            />
-          </View>
         </View>
-      </Screen>
-      <IconButton
-        icon="chevron-left"
-        label="Back"
-        onPress={onBack}
-        style={[styles.back, { top: insets.top + 12 }]}
-      />
-    </View>
+      </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  header: { marginBottom: 24 },
-  sub: { marginTop: 6 },
-  email: { fontFamily: fontFamily.body.semibold },
-  form: { gap: 20 },
-  resend: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: -6 },
-  back: { position: 'absolute', left: 20 },
+  back: { alignItems: 'flex-start', marginBottom: 28 },
+  sub: { marginTop: 8 },
+  email: { marginTop: 4, fontFamily: fontFamily.body.medium },
+  form: { gap: 20, marginTop: 28 },
+  resend: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
 });

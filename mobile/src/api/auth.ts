@@ -29,8 +29,10 @@ export async function passwordLogin(email: string, password: string) {
   return parseResponse(authResponse, data);
 }
 
-/** Needs the session token. */
-export async function setPassword(password: string) {
-  const data = await api.post<unknown>('/auth/password/set', { password });
+/** Needs a token: the session's, or `token` right after a code was confirmed and before sign-in. */
+export async function setPassword(password: string, token?: string) {
+  const data = token
+    ? await api.post<unknown>('/auth/password/set', { password }, { token })
+    : await api.post<unknown>('/auth/password/set', { password });
   return parseResponse(setPasswordResponse, data);
 }

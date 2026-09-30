@@ -12,14 +12,30 @@ describe('TextField', () => {
     expect(onChangeText).toHaveBeenCalledWith('a@b.co');
   });
 
-  it('announces an error as an alert and shows the prefix', async () => {
-    const view = await render(<TextField label="Username" prefix="@" error="Username is taken" />);
-    expect(view.getByRole('alert')).toHaveTextContent('Username is taken');
-    expect(view.getByText('@')).toBeTruthy();
+  it('announces an error as an alert', async () => {
+    const view = await render(<TextField label="Email" error="Enter a valid email address" />);
+    expect(view.getByRole('alert')).toHaveTextContent('Enter a valid email address');
   });
 
   it('shows no alert when there is no error', async () => {
-    const view = await render(<TextField label="Username" />);
+    const view = await render(<TextField label="Email" />);
     expect(view.queryByRole('alert')).toBeNull();
+  });
+
+  it('hides a password until Show is pressed, and hides it again with Hide', async () => {
+    const view = await render(<TextField label="Password" secure value="hunter2hunter2" />);
+    expect(view.getByLabelText('Password').props.secureTextEntry).toBe(true);
+
+    await fireEvent.press(view.getByRole('button', { name: 'Show password' }));
+    expect(view.getByLabelText('Password').props.secureTextEntry).toBe(false);
+    expect(view.getByText('Hide')).toBeTruthy();
+
+    await fireEvent.press(view.getByRole('button', { name: 'Hide password' }));
+    expect(view.getByLabelText('Password').props.secureTextEntry).toBe(true);
+  });
+
+  it('has no Show button on an ordinary field', async () => {
+    const view = await render(<TextField label="Email" />);
+    expect(view.queryByRole('button')).toBeNull();
   });
 });

@@ -16,3 +16,17 @@ export function resolveApiUrl(value: string | undefined, isWeb: boolean): string
 export function getApiUrl(): string {
   return resolveApiUrl(process.env.EXPO_PUBLIC_API_URL, process.env.EXPO_OS === 'web');
 }
+
+/** A legal page the app links to, or null when none is configured (the link is then plain text). */
+export function resolveLegalUrl(value: string | undefined): string | null {
+  const url = value?.trim();
+  return url && /^https?:\/\//.test(url) ? url : null;
+}
+
+export function getTermsUrl(): string | null {
+  return resolveLegalUrl(process.env.EXPO_PUBLIC_TERMS_URL);
+}
+
+export function getPrivacyUrl(): string | null {
+  return resolveLegalUrl(process.env.EXPO_PUBLIC_PRIVACY_URL);
+}

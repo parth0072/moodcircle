@@ -5,14 +5,15 @@ import { useEffect } from 'react';
 import { selectNextPrompt, useUiStore } from '@/stores/ui-store';
 import { colors } from '@/theme';
 
-const PROMPT_ROUTES = { joy: '/joy', password: '/set-password' } as const;
+const PROMPT_ROUTES = { password: '/set-password' } as const;
 
 export default function AppLayout() {
   const router = useRouter();
   const next = useUiStore(selectNextPrompt);
 
-  // One-shot prompts queued by sign-in or first profile setup. Like the web (400 ms), let the
-  // previous screen settle before the next one slides in; the screen removes its own prompt.
+  // One-shot prompts queued by sign-in ("Forgot password?", or a password that could not be saved
+  // at sign-up). Let the first screen settle (400 ms) before the sheet slides in; the sheet removes
+  // its own prompt.
   useEffect(() => {
     if (!next) return;
     const timer = setTimeout(() => router.push(PROMPT_ROUTES[next]), 400);
@@ -22,14 +23,13 @@ export default function AppLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
-      <Stack.Screen name="joy" options={{ presentation: 'modal' }} />
       <Stack.Screen
         name="set-password"
         options={{
           presentation: 'formSheet',
           sheetGrabberVisible: true,
           sheetAllowedDetents: [0.62, 1],
-          contentStyle: { backgroundColor: colors.surface },
+          contentStyle: { backgroundColor: colors.background },
         }}
       />
     </Stack>

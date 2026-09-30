@@ -7,12 +7,8 @@ import { renderScreen } from '@/test-utils/render-screen';
 
 import { SetPasswordScreen } from '.';
 
-jest.mock('@/api/auth', () => ({
-  requestOtp: jest.fn(),
-  verifyOtp: jest.fn(),
-  passwordLogin: jest.fn(),
-  setPassword: jest.fn(),
-}));
+jest.mock('@/api/auth', () => ({ setPassword: jest.fn() }));
+jest.mock('@/api/profile', () => ({ updateProfile: jest.fn() }));
 jest.mock('@/utils/secure-storage', () => ({
   secureStorage: {
     get: async () => null,
@@ -25,77 +21,73 @@ const user = {
   id: 'u1',
   email: 'a@b.co',
   name: 'Asha',
-  username: 'asha',
+  username: null,
   avatar: null,
   isPremium: false,
   hasPassword: false,
   joyActivities: [],
-  joyOnboarded: true,
+  joyOnboarded: false,
 };
 
 beforeEach(() => {
   jest.mocked(setPassword).mockReset();
-  useSessionStore.setState({ hydrated: true, token: 'jwt', user });
+  useSessionStore.setState({ hydrated: true, token: 'jwt', user, persistent: true });
 });
 
+const fill = async (view: Awaited<ReturnType<typeof renderScreen>>, a: string, b: string) => {
+  await fireEvent.changeText(view.getByLabelText('New password'), a);
+  await fireEvent.changeText(view.getByLabelText('Confirm password'), b);
+};
+
 describe('SetPasswordScreen', () => {
-  it('offers to set a password the first time, with a way to skip', async () => {
-    const onDone = jest.fn();
-    const view = await renderScreen(<SetPasswordScreen firstTime onDone={onDone} />);
-    expect(view.getByText('Set a quick-login password')).toBeTruthy();
-    await fireEvent.press(view.getByRole('button', { name: 'Skip for now' }));
-    expect(onDone).toHaveBeenCalled();
-    expect(setPassword).not.toHaveBeenCalled();
-  });
-
-  it('is a plain change-password form afterwards, without a skip button', async () => {
-    const view = await renderScreen(<SetPasswordScreen firstTime={false} onDone={() => {}} />);
-    expect(view.getByText('Change password')).toBeTruthy();
-    expect(view.queryByRole('button', { name: 'Skip for now' })).toBeNull();
-  });
-
   it('checks length and confirmation before calling the server', async () => {
-    const view = await renderScreen(<SetPasswordScreen firstTime onDone={() => {}} />);
-    await fireEvent.changeText(view.getByLabelText('New password'), '123');
-    await fireEvent.press(view.getByRole('button', { name: 'Set Password' }));
-    expect(view.getByRole('alert')).toHaveTextContent('Password must be at least 6 characters');
+    const view = await renderScreen(<SetPasswordScreen onDone={() => {}} />);
+    await fill(view, 'short', 'short');
+    await fireEvent.press(view.getByRole('button', { name: 'Save password' }));
+    expect(view.getByText('Password must be at least 8 characters')).toBeTruthy();
 
-    await fireEvent.changeText(view.getByLabelText('New password'), 'secret1');
-    await fireEvent.changeText(view.getByLabelText('Confirm password'), 'secret2');
-    await fireEvent.press(view.getByRole('button', { name: 'Set Password' }));
-    expect(view.getByRole('alert')).toHaveTextContent('Passwords do not match');
+    await fill(view, 'Secret123!', 'Different1!');
+    await fireEvent.press(view.getByRole('button', { name: 'Save password' }));
+    expect(view.getByText('Passwords do not match')).toBeTruthy();
     expect(setPassword).not.toHaveBeenCalled();
   });
 
   it('saves the password, records it on the stored user and closes', async () => {
     jest.mocked(setPassword).mockResolvedValue({ message: 'Password set', hasPassword: true });
     const onDone = jest.fn();
-    const view = await renderScreen(<SetPasswordScreen firstTime onDone={onDone} />);
-    await fireEvent.changeText(view.getByLabelText('New password'), 'secret1');
-    await fireEvent.changeText(view.getByLabelText('Confirm password'), 'secret1');
-    await fireEvent.press(view.getByRole('button', { name: 'Set Password' }));
-    await waitFor(() => expect(onDone).toHaveBeenCalled());
-    expect(setPassword).toHaveBeenCalledWith('secret1');
+    const view = await renderScreen(<SetPasswordScreen onDone={onDone} />);
+    await fill(view, 'Secret123!', 'Secret123!');
+    await fireEvent.press(view.getByRole('button', { name: 'Save password' }));
+
+    await waitFor(() => expect(onDone).toHaveBeenCalledTimes(1));
+    expect(setPassword).toHaveBeenCalledWith('Secret123!');
     expect(useSessionStore.getState().user?.hasPassword).toBe(true);
   });
 
-  it('keeps the sheet open and shows the reason when saving fails', async () => {
+  it('stays open and shows the reason when saving fails', async () => {
     jest.mocked(setPassword).mockRejectedValue(
       new ApiError({
-        kind: 'network',
-        code: 'NETWORK_ERROR',
-        message: 'Could not reach the server. Check your connection and try again.',
+        kind: 'http',
+        status: 422,
+        code: 'VALIDATION_ERROR',
+        message: 'Password too weak',
       }),
     );
     const onDone = jest.fn();
-    const view = await renderScreen(<SetPasswordScreen firstTime onDone={onDone} />);
-    await fireEvent.changeText(view.getByLabelText('New password'), 'secret1');
-    await fireEvent.changeText(view.getByLabelText('Confirm password'), 'secret1');
-    await fireEvent.press(view.getByRole('button', { name: 'Set Password' }));
-    await waitFor(() =>
-      expect(view.getByRole('alert')).toHaveTextContent(/Could not reach the server/),
-    );
+    const view = await renderScreen(<SetPasswordScreen onDone={onDone} />);
+    await fill(view, 'Secret123!', 'Secret123!');
+    await fireEvent.press(view.getByRole('button', { name: 'Save password' }));
+
+    await waitFor(() => expect(view.getByRole('alert')).toHaveTextContent('Password too weak'));
     expect(onDone).not.toHaveBeenCalled();
-    expect(view.getByLabelText('New password').props.value).toBe('secret1');
+    expect(view.getByLabelText('New password').props.value).toBe('Secret123!');
+  });
+
+  it('can always be skipped', async () => {
+    const onDone = jest.fn();
+    const view = await renderScreen(<SetPasswordScreen onDone={onDone} />);
+    await fireEvent.press(view.getByRole('button', { name: 'Not now' }));
+    expect(onDone).toHaveBeenCalledTimes(1);
+    expect(setPassword).not.toHaveBeenCalled();
   });
 });

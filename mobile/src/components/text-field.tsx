@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
+import { Pressable, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 
 import { accents, colors, radius, type } from '@/theme';
 
@@ -10,7 +10,6 @@ interface TextFieldProps extends Pick<
   | 'value'
   | 'onChangeText'
   | 'placeholder'
-  | 'secureTextEntry'
   | 'keyboardType'
   | 'autoCapitalize'
   | 'autoComplete'
@@ -21,48 +20,53 @@ interface TextFieldProps extends Pick<
   | 'onSubmitEditing'
   | 'editable'
   | 'autoFocus'
+  | 'multiline'
 > {
   label: string;
-  /** Keep the label for screen readers but do not draw it (a field whose purpose is obvious, like "Add your own"). */
-  hideLabel?: boolean;
-  /** Shown in a box on the left, like the web's "@" before a username. */
-  prefix?: string;
+  /** A password field: the text is hidden, with a Show/Hide button inside the field. */
+  secure?: boolean;
   error?: string | null;
   testID?: string;
 }
 
-/** Labelled input from the web `.field` + `.input`: 15 px text, `borderStrong` border, brand border on focus. */
-export function TextField({ label, hideLabel, prefix, error, testID, ...input }: TextFieldProps) {
+/** Labelled input from the design: 52 high, 16 radius, 1.5 tan border, brand border on focus. */
+export function TextField({ label, secure, error, testID, multiline, ...input }: TextFieldProps) {
   const [focused, setFocused] = useState(false);
+  const [shown, setShown] = useState(false);
   return (
     <View style={styles.field}>
-      {hideLabel ? null : (
-        <AppText variant="label" color="textSecondary">
-          {label}
-        </AppText>
-      )}
-      <View style={styles.row}>
-        {prefix ? (
-          <View style={styles.prefix}>
-            <AppText variant="bodyStrong" color="textSecondary">
-              {prefix}
-            </AppText>
-          </View>
-        ) : null}
+      <AppText variant="label">{label}</AppText>
+      <View>
         <TextInput
           {...input}
+          multiline={multiline}
           testID={testID}
           accessibilityLabel={label}
-          placeholderTextColor={colors.textTertiary}
+          secureTextEntry={secure && !shown}
+          placeholderTextColor={colors.placeholder}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           style={[
             styles.input,
-            prefix ? styles.inputWithPrefix : null,
+            multiline ? styles.multiline : null,
+            secure ? styles.inputSecure : null,
             focused ? styles.inputFocused : null,
             error ? styles.inputError : null,
           ]}
         />
+        {secure ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={shown ? 'Hide password' : 'Show password'}
+            hitSlop={6}
+            onPress={() => setShown((s) => !s)}
+            style={styles.toggle}
+          >
+            <AppText variant="linkBold" color="brand">
+              {shown ? 'Hide' : 'Show'}
+            </AppText>
+          </Pressable>
+        ) : null}
       </View>
       {error ? (
         <AppText variant="caption" color="danger" accessibilityRole="alert">
@@ -75,36 +79,28 @@ export function TextField({ label, hideLabel, prefix, error, testID, ...input }:
 
 const styles = StyleSheet.create({
   field: { gap: 6 },
-  row: { flexDirection: 'row', alignItems: 'stretch' },
-  prefix: {
-    paddingVertical: 11,
-    paddingHorizontal: 12,
-    justifyContent: 'center',
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderRightWidth: 0,
-    borderColor: colors.borderStrong,
-    borderTopLeftRadius: radius.sm,
-    borderBottomLeftRadius: radius.sm,
-  },
   input: {
-    ...type.body,
-    flex: 1,
-    minHeight: 46,
-    paddingVertical: 11,
-    paddingHorizontal: 13,
+    ...type.input,
+    minHeight: 52,
+    paddingHorizontal: 16,
     color: colors.text,
     backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    borderRadius: radius.sm,
+    borderWidth: 1.5,
+    borderColor: colors.line,
+    borderRadius: radius.field,
     borderCurve: 'continuous',
     outlineWidth: 0, // the brand-coloured border already shows focus; no second browser ring
   },
-  inputWithPrefix: {
-    borderTopLeftRadius: 0,
-    borderBottomLeftRadius: 0,
-  },
+  multiline: { minHeight: 76, paddingTop: 14, paddingBottom: 14, textAlignVertical: 'top' },
+  inputSecure: { paddingRight: 72 },
   inputFocused: { borderColor: colors.brand },
   inputError: { borderColor: accents.danger },
+  toggle: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    height: 44,
+    paddingHorizontal: 12,
+    justifyContent: 'center',
+  },
 });

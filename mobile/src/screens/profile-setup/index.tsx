@@ -1,105 +1,78 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { isApiError } from '@/api/errors';
 import { AppText } from '@/components/app-text';
 import { Button } from '@/components/button';
 import { Screen } from '@/components/screen';
 import { TextField } from '@/components/text-field';
-import { AVATARS } from '@/constants/avatars';
 import { useUpdateProfile } from '@/hooks/use-profile';
 import { useSessionStore } from '@/stores/session-store';
 import { describeError } from '@/utils/error-message';
 
-import { AvatarPicker } from './avatar-picker';
-
-const MIN_USERNAME = 3;
-
 interface ProfileSetupScreenProps {
-  /** True on the onboarding step: a first save also queues the one-time "what makes you feel good" prompt. */
-  firstSetup?: boolean;
+  /** 'setup': an account without a name (the auth gate shows this). 'edit': changing the name later. */
+  mode: 'setup' | 'edit';
+  /** Called after 'edit' saves, so the route can close. In 'setup' the auth gate moves on by itself. */
   onSaved?: () => void;
 }
 
-/** Name, username and emoji avatar (web `#s-profile-setup`). Usernames are lower-case letters, digits, underscore. */
-export function ProfileSetupScreen({ firstSetup = false, onSaved }: ProfileSetupScreenProps) {
-  const user = useSessionStore((s) => s.user);
-  const [avatar, setAvatar] = useState<string>(user?.avatar ?? AVATARS[0]);
-  const [name, setName] = useState(user?.name ?? '');
-  const [username, setUsername] = useState(user?.username ?? '');
-  const [nameError, setNameError] = useState<string | null>(null);
-  const [usernameError, setUsernameError] = useState<string | null>(null);
+/** The one thing every account needs: a name to show. Usually the sign-up form has already asked. */
+export function ProfileSetupScreen({ mode, onSaved }: ProfileSetupScreenProps) {
+  const [name, setName] = useState(() => useSessionStore.getState().user?.name ?? '');
   const [error, setError] = useState<string | null>(null);
-  const update = useUpdateProfile({ firstSetup });
+  const update = useUpdateProfile();
 
   const submit = async () => {
     if (update.isPending) return;
-    const displayName = name.trim();
-    setNameError(null);
-    setUsernameError(null);
+    const trimmed = name.trim();
+    if (!trimmed) return setError('Enter your name');
     setError(null);
-    if (!displayName) return setNameError('Enter your display name');
-    if (username && username.length < MIN_USERNAME) {
-      return setUsernameError(`Username must be at least ${MIN_USERNAME} characters`);
-    }
     try {
-      await update.mutateAsync({ name: displayName, username: username || undefined, avatar });
+      await update.mutateAsync({ name: trimmed });
       onSaved?.();
     } catch (e) {
-      if (isApiError(e) && e.code === 'USERNAME_TAKEN') setUsernameError('That username is taken');
-      else setError(describeError(e, 'Failed to save profile'));
+      setError(describeError(e, 'Could not save your name'));
     }
   };
 
   return (
-    <Screen align="start">
-      <AppText variant="displayTitle">Set up your profile</AppText>
-      <AppText color="textSecondary" style={styles.sub}>
-        Your friends will see this in the mood feed.
-      </AppText>
-
-      <AvatarPicker value={avatar} onChange={setAvatar} />
-
+    <Screen background="background" align={mode === 'setup' ? 'center' : 'start'}>
+      <View style={styles.header}>
+        <AppText variant="headline" accessibilityRole="header">
+          {mode === 'setup' ? 'What should we call you?' : 'Your name'}
+        </AppText>
+        <AppText color="textSecondary">
+          {mode === 'setup'
+            ? 'It is what you will see on your profile.'
+            : 'Change how your name appears on your profile.'}
+        </AppText>
+      </View>
       <View style={styles.form}>
         <TextField
-          label="Display name"
+          label="Your name"
           value={name}
           onChangeText={setName}
-          placeholder="e.g. Alex"
-          maxLength={40}
+          placeholder="What should we call you?"
           autoCapitalize="words"
-          autoComplete="name"
-          textContentType="name"
-          returnKeyType="next"
-          error={nameError}
-        />
-        <TextField
-          label="Username"
-          prefix="@"
-          value={username}
-          onChangeText={(text) => setUsername(text.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-          placeholder="yourname"
-          maxLength={20}
-          autoCapitalize="none"
-          autoCorrect={false}
-          autoComplete="username-new"
-          textContentType="username"
+          autoComplete="given-name"
+          textContentType="givenName"
+          maxLength={40}
           returnKeyType="go"
           onSubmitEditing={submit}
-          error={usernameError}
+          error={error}
+          editable={!update.isPending}
         />
-        {error ? (
-          <AppText variant="label" color="danger" accessibilityRole="alert">
-            {error}
-          </AppText>
-        ) : null}
-        <Button title="Continue" onPress={submit} loading={update.isPending} />
+        <Button
+          title={mode === 'setup' ? 'Continue' : 'Save'}
+          onPress={submit}
+          loading={update.isPending}
+        />
       </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  sub: { marginTop: 6, marginBottom: 32 },
-  form: { gap: 14 },
+  header: { gap: 8, marginBottom: 28 },
+  form: { gap: 20 },
 });

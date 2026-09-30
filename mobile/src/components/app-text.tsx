@@ -2,7 +2,8 @@ import { Text, type TextProps } from 'react-native';
 
 import { accents, colors, type, type TextVariant } from '@/theme';
 
-type TextColor = 'text' | 'textSecondary' | 'textTertiary' | 'brand' | 'onBrand' | 'danger';
+type TextColor =
+  'text' | 'textSecondary' | 'textSoft' | 'textTertiary' | 'brand' | 'onBrand' | 'onInk' | 'danger';
 
 interface AppTextProps extends TextProps {
   variant?: TextVariant;
@@ -12,9 +13,11 @@ interface AppTextProps extends TextProps {
 const palette: Record<TextColor, string> = {
   text: colors.text,
   textSecondary: colors.textSecondary,
+  textSoft: colors.textSoft,
   textTertiary: colors.textTertiary,
   brand: colors.brand,
   onBrand: colors.onBrand,
+  onInk: colors.onInk,
   danger: accents.danger,
 };
 

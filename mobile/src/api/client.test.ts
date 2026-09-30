@@ -49,6 +49,20 @@ describe('api client', () => {
     expect(init.body).toBe('{"name":"Circle"}');
   });
 
+  it('sends an explicit token instead of the session one, for the moment before sign-in', async () => {
+    const fetch = stubFetch({ status: 200, body: { success: true, data: {} } });
+    const { client } = makeClient(fetch, null);
+    await client.patch('/profile', { name: 'Asha' }, { token: 'fresh-token' });
+    expect(fetch.mock.calls[0][1].headers.Authorization).toBe('Bearer fresh-token');
+  });
+
+  it('ignores an explicit token when auth is false', async () => {
+    const fetch = stubFetch({ status: 200, body: { success: true, data: {} } });
+    const { client } = makeClient(fetch);
+    await client.post('/auth/otp/request', {}, { auth: false, token: 'fresh-token' });
+    expect(fetch.mock.calls[0][1].headers.Authorization).toBeUndefined();
+  });
+
   it('omits the token when auth is false', async () => {
     const fetch = stubFetch({ status: 200, body: { success: true, data: {} } });
     const { client } = makeClient(fetch);

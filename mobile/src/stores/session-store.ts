@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import { isProfileComplete, type User } from '@/api/schemas/user';
+import { isProfileComplete, mergeUserFields, type User } from '@/api/schemas/user';
 import { secureStorage } from '@/utils/secure-storage';
 
 const TOKEN_KEY = 'mc.token';
@@ -13,8 +13,11 @@ interface SessionState {
   hydrated: boolean;
   token: string | null;
   user: User | null;
+  /** False for a sign-in without "Remember me": nothing is written to storage for that session. */
+  persistent: boolean;
   hydrate: () => Promise<void>;
-  signIn: (token: string, user: User) => Promise<void>;
+  /** `remember: false` keeps the session in memory only, so the next launch starts signed out. */
+  signIn: (token: string, user: User, options?: { remember?: boolean }) => Promise<void>;
   /** Profile responses omit email/hasPassword: merge, never replace. */
   mergeUser: (patch: Partial<User>) => Promise<void>;
   signOut: () => Promise<void>;
@@ -24,6 +27,7 @@ export const useSessionStore = create<SessionState>()((set, get) => ({
   hydrated: false,
   token: null,
   user: null,
+  persistent: true,
 
   async hydrate() {
     try {
@@ -38,32 +42,31 @@ export const useSessionStore = create<SessionState>()((set, get) => ({
         // A token without a readable user snapshot is not a usable session.
         await Promise.all([secureStorage.remove(TOKEN_KEY), secureStorage.remove(USER_KEY)]);
       }
-      set({ token: user ? token : null, user, hydrated: true });
+      set({ token: user ? token : null, user, hydrated: true, persistent: true });
     } catch {
       // Unreadable storage must not brick the app. Start signed out, leave storage untouched.
       set({ token: null, user: null, hydrated: true });
     }
   },
 
-  async signIn(token, user) {
-    set({ token, user, hydrated: true });
-    await persist(token, user);
+  async signIn(token, user, { remember = true } = {}) {
+    set({ token, user, hydrated: true, persistent: remember });
+    if (remember) await persist(token, user);
+    // Not remembered: also clear an older stored session, or it would come back on the next launch.
+    else
+      await Promise.allSettled([secureStorage.remove(TOKEN_KEY), secureStorage.remove(USER_KEY)]);
   },
 
   async mergeUser(patch) {
-    const { token, user } = get();
+    const { token, user, persistent } = get();
     if (!token || !user) return;
-    // `undefined` means "not in the answer", never "clear it": a profile response has no email.
-    const provided = Object.fromEntries(
-      Object.entries(patch).filter(([, value]) => value !== undefined),
-    );
-    const next = { ...user, ...provided };
+    const next = mergeUserFields(user, patch);
     set({ user: next });
-    await persist(token, next);
+    if (persistent) await persist(token, next);
   },
 
   async signOut() {
-    set({ token: null, user: null });
+    set({ token: null, user: null, persistent: true });
     await Promise.allSettled([secureStorage.remove(TOKEN_KEY), secureStorage.remove(USER_KEY)]);
   },
 }));

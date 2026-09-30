@@ -59,6 +59,16 @@ describe('auth api', () => {
     expect(post).toHaveBeenCalledWith('/auth/password/set', { password: 'secret1' });
   });
 
+  it('sets a password with an explicit token, right after a code was confirmed', async () => {
+    post.mockResolvedValue({ message: 'Password set', hasPassword: true });
+    await setPassword('secret1', 'fresh-token');
+    expect(post).toHaveBeenCalledWith(
+      '/auth/password/set',
+      { password: 'secret1' },
+      { token: 'fresh-token' },
+    );
+  });
+
   it('turns a malformed answer into an invalid-response error', async () => {
     post.mockResolvedValue({ token: 'jwt' });
     await expect(verifyOtp('a@b.co', '123456')).rejects.toMatchObject({ kind: 'invalid-response' });

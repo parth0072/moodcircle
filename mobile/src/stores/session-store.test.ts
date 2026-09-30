@@ -31,7 +31,7 @@ const complete: User = {
 beforeEach(() => {
   mockMemory.clear();
   mockFailing.get = false;
-  useSessionStore.setState({ hydrated: false, token: null, user: null });
+  useSessionStore.setState({ hydrated: false, token: null, user: null, persistent: true });
 });
 
 describe('session store', () => {
@@ -126,5 +126,28 @@ describe('session store', () => {
     await useSessionStore.getState().signOut();
     expect(useSessionStore.getState()).toMatchObject({ token: null, user: null });
     expect(mockMemory.size).toBe(0);
+  });
+
+  it('keeps a session that was not remembered in memory only, and clears an older stored one', async () => {
+    await useSessionStore.getState().signIn('old', complete);
+    await useSessionStore.getState().signIn('tok', complete, { remember: false });
+    expect(useSessionStore.getState()).toMatchObject({ token: 'tok', persistent: false });
+    expect(selectStatus(useSessionStore.getState())).toBe('ready');
+    expect(mockMemory.size).toBe(0);
+  });
+
+  it('does not write profile changes to storage for a session that was not remembered', async () => {
+    await useSessionStore.getState().signIn('tok', complete, { remember: false });
+    await useSessionStore.getState().mergeUser({ name: 'Asha K' });
+    expect(useSessionStore.getState().user?.name).toBe('Asha K');
+    expect(mockMemory.size).toBe(0);
+  });
+
+  it('a remembered sign-in is written, and a restored session counts as remembered', async () => {
+    await useSessionStore.getState().signIn('tok', complete, { remember: true });
+    expect(mockMemory.get('mc.token')).toBe('tok');
+    useSessionStore.setState({ hydrated: false, token: null, user: null, persistent: false });
+    await useSessionStore.getState().hydrate();
+    expect(useSessionStore.getState().persistent).toBe(true);
   });
 });

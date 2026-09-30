@@ -1,7 +1,7 @@
 import { ProfileSetupScreen } from '@/screens/profile-setup';
 
-// After a first save the session has a name, the auth gate moves on, and the queued one-time
-// prompts (joy, then password) are shown by the signed-in area.
+// An account without a name lands here. After saving, the session has a name and the auth gate
+// moves on to the signed-in area by itself.
 export default function ProfileRoute() {
-  return <ProfileSetupScreen firstSetup />;
+  return <ProfileSetupScreen mode="setup" />;
 }

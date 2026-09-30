@@ -23,6 +23,11 @@ export interface RequestOptions {
    * "wrong credentials", never "your session expired".
    */
   auth?: boolean;
+  /**
+   * Use this token instead of the session's. Only for the moment between confirming an emailed
+   * code and signing in, when there is no session yet (finishing a new account's profile).
+   */
+  token?: string;
   signal?: AbortSignal;
 }
 
@@ -32,8 +37,8 @@ export function createApiClient(options: ApiClientOptions) {
   const { baseUrl, fetch, getToken, onUnauthorized, timeoutMs = 15_000 } = options;
 
   async function request<T>(method: string, path: string, opts: RequestOptions = {}): Promise<T> {
-    const { body, auth = true, signal } = opts;
-    const token = auth ? getToken() : null;
+    const { body, auth = true, token: explicitToken, signal } = opts;
+    const token = auth ? (explicitToken ?? getToken()) : null;
 
     const headers: Record<string, string> = { Accept: 'application/json' };
     if (body !== undefined) headers['Content-Type'] = 'application/json';

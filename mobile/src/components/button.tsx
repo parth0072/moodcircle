@@ -6,21 +6,34 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { colors, radius } from '@/theme';
+import { accents, colors, radius } from '@/theme';
 
 import { AppText } from './app-text';
+
+type Variant = 'primary' | 'accent' | 'outline' | 'danger';
 
 interface ButtonProps {
   title: string;
   onPress?: () => void;
-  variant?: 'primary' | 'outline';
+  /**
+   * primary: ink pill (the design's main action). accent: yellow pill for use on the blue welcome
+   * screen. outline: white pill with a tan border. danger: outlined red, for "Log out".
+   */
+  variant?: Variant;
   /** Shows a spinner, blocks repeat taps, and keeps the label available to screen readers. */
   loading?: boolean;
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
 }
 
-/** Pill button from the web `.btn`: 13x18 padding, 15/600 label, full width, pressed 0.8, disabled 0.5. */
+const looks = {
+  primary: { container: 'primary', text: 'onInk', label: 'button', spinner: colors.onInk },
+  accent: { container: 'accent', text: 'text', label: 'buttonBold', spinner: colors.ink },
+  outline: { container: 'outline', text: 'text', label: 'button', spinner: colors.ink },
+  danger: { container: 'danger', text: 'danger', label: 'buttonBold', spinner: accents.danger },
+} as const;
+
+/** Full-width pill, 56 high, from the design's primary, accent and log-out buttons. */
 export function Button({
   title,
   onPress,
@@ -29,7 +42,7 @@ export function Button({
   disabled = false,
   style,
 }: ButtonProps) {
-  const primary = variant === 'primary';
+  const look = looks[variant];
   const inactive = disabled || loading;
   return (
     <Pressable
@@ -40,15 +53,15 @@ export function Button({
       onPress={onPress}
       style={({ pressed }) => [
         styles.base,
-        primary ? styles.primary : styles.outline,
-        { opacity: disabled ? 0.5 : pressed ? 0.8 : 1 },
+        styles[look.container],
+        { opacity: disabled ? 0.5 : pressed ? 0.85 : 1 },
         style,
       ]}
     >
       {loading ? (
-        <ActivityIndicator size="small" color={primary ? colors.onBrand : colors.brand} />
+        <ActivityIndicator size="small" color={look.spinner} />
       ) : (
-        <AppText variant="bodyStrong" color={primary ? 'onBrand' : 'text'}>
+        <AppText variant={look.label} color={look.text}>
           {title}
         </AppText>
       )}
@@ -58,18 +71,25 @@ export function Button({
 
 const styles = StyleSheet.create({
   base: {
-    minHeight: 48,
-    paddingVertical: 13,
-    paddingHorizontal: 18,
+    minHeight: 56,
+    paddingHorizontal: 20,
     borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'stretch',
   },
-  primary: { backgroundColor: colors.brand },
+  primary: {
+    backgroundColor: colors.ink,
+    boxShadow: '0 10px 24px rgba(30, 42, 90, 0.28)',
+  },
+  accent: { backgroundColor: accents.sun },
   outline: {
     backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
+    borderWidth: 1.5,
+    borderColor: colors.line,
+  },
+  danger: {
+    borderWidth: 1.5,
+    borderColor: accents.danger,
   },
 });

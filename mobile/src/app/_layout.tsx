@@ -17,6 +17,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 
 import { queryClient, setupQueryLifecycle } from '@/api/query-client';
+import { usePrefsStore } from '@/stores/prefs-store';
 import { selectStatus, useSessionStore } from '@/stores/session-store';
 
 SplashScreen.preventAutoHideAsync();
@@ -33,14 +34,16 @@ export default function RootLayout() {
     Fraunces_700Bold,
   });
   const status = useSessionStore(selectStatus);
+  const prefsHydrated = usePrefsStore((s) => s.hydrated);
 
   useEffect(() => {
     void useSessionStore.getState().hydrate();
+    void usePrefsStore.getState().hydrate();
     return setupQueryLifecycle();
   }, []);
 
   // A font that fails to load must not leave the app on the splash screen forever.
-  const ready = (fontsLoaded || fontError !== null) && status !== 'loading';
+  const ready = (fontsLoaded || fontError !== null) && status !== 'loading' && prefsHydrated;
 
   useEffect(() => {
     if (ready) SplashScreen.hide();

@@ -1,39 +1,66 @@
-// Moodbloom palette, copied from the :root block of public/css/app.css. Light only for now:
-// there is no dark variant, so app.json sets userInterfaceStyle to "light". When a dark palette
-// exists, turn these into light/dark pairs behind one hook rather than adding a second file.
+import type { Emotion } from '../constants/emotions';
+
+// Moodbloom palette, taken from the "Moodbloom – Mood Tracking App" design canvas. Light only for
+// now: there is no dark variant, so app.json sets userInterfaceStyle to "light". When a dark
+// palette exists, turn these into light/dark pairs behind one hook rather than adding a second file.
 export const colors = {
-  background: '#FAF6EE', // --bg
-  surface: '#FFFFFF', // --white
-  border: '#E9E1D0', // --border
-  borderStrong: '#DDD0B4', // --border2
-  brand: '#3651A8', // --p
-  brandTint: '#E3E9F7', // --p-dim
-  brandBorder: '#B7C4EC', // --p-border
-  brandText: '#4A5A9C', // --p-text2
-  ink: '#1E2A5A', // --p-dark, also the mood face stroke
-  text: '#1E2A5A', // --txt
-  textSecondary: '#5F6A8C', // --txt2
-  // --txt3. Contrast is about 2.3:1 (fails WCAG AA): placeholders and decoration only,
-  // never text the user has to read.
+  // Surfaces
+  background: '#FAF6EE', // cream screens
+  surface: '#FFFFFF', // inputs, cards
+  sand: '#EFE3CC', // unfilled strength blocks, the "Try this" card
+  track: '#EFE8D8', // the Week/Month control's track
+  // Brand and ink
+  brand: '#3651A8', // blue screens, links, switches
+  brandTint: '#EEF1FA', // icon tiles in settings rows
+  ink: '#1E2A5A', // headings, body text, primary buttons
+  text: '#1E2A5A',
+  textSecondary: '#5B6180', // helper lines, labels of small numbers
+  textSoft: '#4A5074', // "Already have an account?"
+  // Placeholder text. 3.9:1 on white: enough for a hint, never for text the user must read.
+  placeholder: '#7A7F98',
+  onBrand: '#FFFFFF', // text on the blue screens
+  onInk: '#FAF6EE', // text on ink-coloured buttons
+  // Lines
+  line: '#E6D3A8', // input, round-button and card borders
+  lineSoft: '#F1EADB', // dividers inside a card
+  chipBorder: '#D8CBAA',
+  dashed: '#C9C2AE', // "no entry" day
+  switchOff: '#D6D2C6',
+  meterOff: '#E6DFCC', // empty bar of the password meter
+  // Legacy names still used by screens that are being replaced; removed together with them.
+  border: '#E9E1D0',
+  borderStrong: '#DDD0B4',
+  brandBorder: '#B7C4EC',
+  brandText: '#4A5A9C',
   textTertiary: '#9CA5C4',
-  onBrand: '#FFFFFF',
 } as const;
 
-// Accents the web CSS still uses from before the Moodbloom redesign. They are real (streak card,
-// "Send support" nudge, error toast), so they are tokens, but they sit outside the palette above:
-// confirm or replace them with the designer before shipping. Avoid the web's other one-offs
-// (stat numbers #22C55E and #F59E0B are about 2.2:1 on white): use brand, ink or a mood colour.
+// One colour per emotion: the face, its blob on the insights screen and its dot in the week row.
+// Ink text reads on every one of them (colors.test.ts).
+export const emotionColors: Record<Emotion, string> = {
+  joy: '#F6C6D6',
+  calm: '#A9DCC8',
+  sad: '#8FCBF0',
+  worry: '#C9E6DA',
+  anger: '#F9C77E',
+  meh: '#A7C47A',
+};
+
 export const accents = {
+  sun: '#F9C77E', // the welcome screen's call to action
+  amber: '#F7B04A', // the balance score card
+  strength: '#E0668F', // filled "How strong?" blocks, blush on the joy face
+  // Errors and "Log out". The design's own red: 5.6:1 on cream, 6.0:1 on white.
+  danger: '#B03A2E',
+  // Old streak and support colours, kept until the screens that use them are gone.
   streak: {
     tint: '#FFF7ED',
     border: '#FED7AA',
-    solid: '#EA580C', // big streak numbers only (3.4:1): 24px and up
+    solid: '#EA580C',
     text: '#C2410C',
     textStrong: '#9A3412',
   },
   support: { tint: '#EFF6FF', border: '#BFDBFE', text: '#2563EB' },
-  // The web uses #EF4444 (3.8:1 with white, or on white): fails AA for small text. #DC2626 is 4.8:1.
-  danger: '#DC2626',
 } as const;
 
 export type MoodLevel = 1 | 2 | 3 | 4 | 5;
@@ -46,8 +73,6 @@ export const moodLabels = {
   5: 'Great',
 } as const satisfies Record<MoodLevel, string>;
 
-// solid = --mN, tint = --mNb, text = --mNt. `text` on `tint` misses AA for levels 2 and 3
-// (3.8:1 and 4.1:1): below 14px bold, label those chips with `colors.ink` instead.
 export const moodColors = {
   1: { solid: '#D9848B', tint: '#FBEBEC', text: '#A24851' },
   2: { solid: '#F0A85E', tint: '#FCF1E0', text: '#B06B1E' },
@@ -56,7 +81,6 @@ export const moodColors = {
   5: { solid: '#6FB8A8', tint: '#E7F5F0', text: '#2A7A64' },
 } as const satisfies Record<MoodLevel, { solid: string; tint: string; text: string }>;
 
-/** Avatar backgrounds (AV_COLORS in public/js/constants.js). */
 export const avatarColors = [
   '#5C6FA8',
   '#4A9B95',

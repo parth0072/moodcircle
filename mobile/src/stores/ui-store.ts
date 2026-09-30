@@ -1,30 +1,49 @@
 import { create } from 'zustand';
 
 /**
- * One-shot prompts to show after sign-in, in priority order. Not persisted on purpose: they are a
- * continuation of the sign-in or first profile setup that just happened, never a gate. A returning
- * user whose `joyOnboarded` is false is NOT asked at login (that hijacked logins on the web).
+ * One-shot prompts to show after sign-in. 'password' opens the set-password sheet: after a
+ * "Forgot password?" sign-in, or when saving the password chosen at sign-up failed. Not persisted
+ * on purpose: they are a continuation of the sign-in that just happened, never a gate.
  */
-export type Prompt = 'joy' | 'password';
+export type Prompt = 'password';
 
-const ORDER: Prompt[] = ['joy', 'password'];
+/** What the sign-up form collected. The server only takes it after the emailed code is confirmed. */
+export interface SignupDraft {
+  name: string;
+  password: string;
+}
 
 interface UiState {
   prompts: Prompt[];
+  /** In memory only, between the sign-up form and the code screen: never persisted, never in a URL. */
+  signupDraft: SignupDraft | null;
+  /** A one-line message for the signed-in area, shown once (for example "You already have an account"). */
+  notice: string | null;
   enqueuePrompt: (prompt: Prompt) => void;
   dismissPrompt: (prompt: Prompt) => void;
-  clearPrompts: () => void;
+  setSignupDraft: (draft: SignupDraft) => void;
+  clearSignupDraft: () => void;
+  setNotice: (notice: string) => void;
+  clearNotice: () => void;
+  /** Everything at once, as on sign-out: nothing of one user may carry over to the next. */
+  reset: () => void;
 }
 
 export const useUiStore = create<UiState>()((set) => ({
   prompts: [],
+  signupDraft: null,
+  notice: null,
   enqueuePrompt: (prompt) =>
     set((s) => (s.prompts.includes(prompt) ? s : { prompts: [...s.prompts, prompt] })),
   dismissPrompt: (prompt) => set((s) => ({ prompts: s.prompts.filter((p) => p !== prompt) })),
-  clearPrompts: () => set({ prompts: [] }),
+  setSignupDraft: (signupDraft) => set({ signupDraft }),
+  clearSignupDraft: () => set({ signupDraft: null }),
+  setNotice: (notice) => set({ notice }),
+  clearNotice: () => set({ notice: null }),
+  reset: () => set({ prompts: [], signupDraft: null, notice: null }),
 }));
 
-/** The prompt to show now: the highest-priority one that is queued. */
+/** The prompt to show now, if any. */
 export function selectNextPrompt(s: Pick<UiState, 'prompts'>): Prompt | null {
-  return ORDER.find((p) => s.prompts.includes(p)) ?? null;
+  return s.prompts[0] ?? null;
 }

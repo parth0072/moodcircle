@@ -1,51 +1,48 @@
-import Svg, { Circle, Line, Path, Polyline } from 'react-native-svg';
+import Svg, { Circle, Path, Polyline, Rect } from 'react-native-svg';
 
 import { colors } from '@/theme';
 
-// Feather-style 24x24 line icons, copied from the inline SVGs in public/index.html so the app
-// keeps the web's drawing. One implementation for iOS, Android and the web verification build
-// (SF Symbols do not render on web, and would make the app's chrome look unlike the mood faces).
-// To add an icon, copy its <path>/<polyline>/<circle>/<line> here; nothing else changes.
+// 24x24 line icons drawn to match the Moodbloom design. One implementation for iOS, Android and
+// the web verification build (SF Symbols do not render on web). To add an icon, add its shapes
+// here; nothing else changes. Filled details use `currentColor`, which follows the `color` prop.
 const ICONS = {
-  home: (
-    <>
-      <Path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-      <Polyline points="9 22 9 12 15 12 15 22" />
-    </>
-  ),
-  activity: <Polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />,
-  plus: (
-    <>
-      <Line x1="12" y1="5" x2="12" y2="19" />
-      <Line x1="5" y1="12" x2="19" y2="12" />
-    </>
-  ),
-  zap: <Path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />,
-  user: (
-    <>
-      <Path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-      <Circle cx="12" cy="7" r="4" />
-    </>
-  ),
   'chevron-left': <Polyline points="15 18 9 12 15 6" />,
   'chevron-right': <Polyline points="9 18 15 12 9 6" />,
-  'chevron-down': <Polyline points="6 9 12 15 18 9" />,
-  'log-out': <Path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" />,
-  'refresh-cw': (
+  person: (
     <>
-      <Polyline points="23 4 23 10 17 10" />
-      <Path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" />
+      <Circle cx="12" cy="8" r="4" />
+      <Path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" />
     </>
   ),
-  'share-2': (
+  // Insights: a pie with one slice pulled out.
+  pie: (
     <>
-      <Circle cx="18" cy="5" r="3" />
-      <Circle cx="6" cy="12" r="3" />
-      <Circle cx="18" cy="19" r="3" />
-      <Line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-      <Line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+      <Path d="M21 12a9 9 0 1 1-9-9v9z" />
+      <Path d="M15 3.5A9 9 0 0 1 20.5 9H15z" fill="currentColor" />
     </>
   ),
+  // Log a mood: a calendar with two days marked.
+  calendar: (
+    <>
+      <Rect x="3" y="5" width="18" height="16" rx="3" />
+      <Path d="M8 3v4M16 3v4M3 10h18" />
+      <Circle cx="8" cy="15" r="1" fill="currentColor" />
+      <Circle cx="12" cy="15" r="1" fill="currentColor" />
+    </>
+  ),
+  edit: (
+    <>
+      <Path d="M4 20h4L19 9l-4-4L4 16z" />
+      <Path d="M13 7l4 4" />
+    </>
+  ),
+  bell: (
+    <>
+      <Path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8" />
+      <Path d="M10 20a2 2 0 0 0 4 0" />
+    </>
+  ),
+  check: <Polyline points="20 6 9 17 4 12" />,
 } as const;
 
 export type IconName = keyof typeof ICONS;
@@ -54,7 +51,6 @@ interface IconProps {
   name: IconName;
   size?: number;
   color?: string;
-  /** The web uses 1.7 in the tab bar and 2 to 2.5 elsewhere. */
   strokeWidth?: number;
 }
 
@@ -67,6 +63,7 @@ export function Icon({ name, size = 22, color = colors.text, strokeWidth = 2 }: 
       viewBox="0 0 24 24"
       fill="none"
       stroke={color}
+      color={color}
       strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"

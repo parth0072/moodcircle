@@ -25,4 +25,11 @@ describe('Button', () => {
     await fireEvent.press(view.getByRole('button', { name: 'Save' }));
     expect(onPress).not.toHaveBeenCalled();
   });
+
+  it('renders every variant with its label', async () => {
+    for (const variant of ['primary', 'accent', 'outline', 'danger'] as const) {
+      const view = await render(<Button title={`Go ${variant}`} variant={variant} />);
+      expect(view.getByRole('button', { name: `Go ${variant}` })).toBeTruthy();
+    }
+  });
 });

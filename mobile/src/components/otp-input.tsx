@@ -46,9 +46,7 @@ export function OtpInput({
               focused && i === active ? styles.boxActive : null,
             ]}
           >
-            <AppText variant="title" style={styles.digit}>
-              {value[i] ?? ''}
-            </AppText>
+            <AppText variant="titleLg">{value[i] ?? ''}</AppText>
           </View>
         ))}
       </View>
@@ -82,15 +80,14 @@ const styles = StyleSheet.create({
     height: 54,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    borderRadius: radius.sm,
+    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: colors.line,
+    borderRadius: radius.field,
     borderCurve: 'continuous',
   },
-  boxFilled: { borderColor: colors.brand, backgroundColor: colors.brandTint },
+  boxFilled: { borderColor: colors.ink },
   boxActive: { borderColor: colors.brand },
-  digit: { fontSize: 22, lineHeight: 28 },
   // Sits over the boxes, invisible but real: it keeps focus, paste and autofill behaviour.
   input: {
     ...StyleSheet.absoluteFill,

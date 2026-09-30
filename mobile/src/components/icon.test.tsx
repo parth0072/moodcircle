@@ -3,17 +3,14 @@ import { render } from '@testing-library/react-native';
 import { Icon, type IconName } from './icon';
 
 const names: IconName[] = [
-  'home',
-  'activity',
-  'plus',
-  'zap',
-  'user',
   'chevron-left',
   'chevron-right',
-  'chevron-down',
-  'log-out',
-  'refresh-cw',
-  'share-2',
+  'person',
+  'pie',
+  'calendar',
+  'edit',
+  'bell',
+  'check',
 ];
 
 describe('Icon', () => {

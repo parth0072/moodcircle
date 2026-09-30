@@ -9,7 +9,7 @@ import { queryClient } from './query-client';
 
 /** End the session everywhere: memory, storage, and every cached query of the old user. */
 export async function endSession() {
-  useUiStore.getState().clearPrompts();
+  useUiStore.getState().reset();
   await useSessionStore.getState().signOut();
   queryClient.clear();
 }
