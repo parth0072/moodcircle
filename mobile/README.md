@@ -7,7 +7,7 @@ The React Native (Expo SDK 57) app for MoodCircle. It talks to the same API as t
 From the project folder (the one above `mobile/`):
 
 ```bash
-git fetch origin && git checkout feat/mobile-sign-in && git pull
+git fetch origin && git checkout feat/mobile-mood-tracking && git pull
 bash run-mobile.sh
 ```
 

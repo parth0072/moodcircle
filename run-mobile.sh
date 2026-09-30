@@ -221,8 +221,8 @@ echo "=== [1/5] Checking this computer ==="
 if [ "$(uname)" != "Darwin" ]; then
   warn "This is $(uname), not macOS. The iOS Simulator only exists on a Mac."
 fi
-[ -d "$MOBILE" ] || die "The mobile/ folder is missing. The app lives on the branch feat/mobile-sign-in:
-  git fetch origin && git checkout feat/mobile-sign-in && git pull"
+[ -d "$MOBILE" ] || die "The mobile/ folder is missing. The app lives on the branch feat/mobile-mood-tracking:
+  git fetch origin && git checkout feat/mobile-mood-tracking && git pull"
 ensure_node
 command -v npm >/dev/null 2>&1 || die "npm was not found (it is installed together with Node.js)."
 command -v curl >/dev/null 2>&1 || die "curl was not found."
