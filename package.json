@@ -8,6 +8,7 @@
   },
   "scripts": {
     "start": "node server.js",
+    "test": "node --test",
     "dev": "node -r dotenv/config server.js dotenv_config_path=.env.dev",
     "seed": "node scripts/seed.js",
     "dev:fresh": "node scripts/seed.js && node -r dotenv/config server.js dotenv_config_path=.env.dev"

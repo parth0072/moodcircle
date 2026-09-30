@@ -25,6 +25,7 @@ const streakRoutes   = require('./routes/streak.routes');
 const privateRoutes  = require('./routes/private.routes');
 const premiumRoutes  = require('./routes/premium.routes');
 const profileRoutes  = require('./routes/profile.routes');
+const entryRoutes    = require('./routes/entry.routes');
 
 app.get(`${BASE}/api/health`, (req, res) => res.json({ ok: true }));
 
@@ -37,6 +38,7 @@ app.use(`${BASE}/api/streaks`,                     streakRoutes);
 app.use(`${BASE}/api/private`,                     privateRoutes);
 app.use(`${BASE}/api/premium`,                     premiumRoutes);
 app.use(`${BASE}/api/profile`,                     profileRoutes);
+app.use(`${BASE}/api/entries`,                     entryRoutes);
 
 // ── Fallback: serve index.html for any non-API route ─────────────────────────
 app.get(`${BASE}/*`, (req, res) => {
