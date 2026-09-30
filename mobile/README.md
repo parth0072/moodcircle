@@ -2,9 +2,25 @@
 
 The React Native (Expo SDK 57) app for MoodCircle. It talks to the same API as the website.
 
+## Run it on your Mac (one command)
+
+From the project folder (the one above `mobile/`):
+
+```bash
+git fetch origin && git checkout feat/mobile-sign-in && git pull
+bash run-mobile.sh
+```
+
+The script checks Node.js and Xcode (and offers to install or set up what is missing), installs the dependencies, starts a
+local test copy of the API, and opens the app in the iOS Simulator. The test server sends no emails: the sign-in code is
+printed in the terminal as `>>> Sign-in code: 123456`. Ctrl+C stops everything. Other options: `--phone` (iPhone with Expo
+Go, see below), `--api https://your-domain.com/moodcircle/api` (your deployed server instead of the local one), `--reset`
+(empty the test database to see sign-up again), `--help`.
+
 ## Run it on your iPhone
 
-You need a computer with Node.js 22.13 or newer, and the iPhone on the same Wi-Fi.
+`bash run-mobile.sh --phone` does the steps below for you (it still needs the Expo sign-in and a matching Expo Go). You need
+a computer with Node.js 22.13 or newer, and the iPhone on the same Wi-Fi.
 
 1. **Have an Expo Go that opens SDK 57 projects.** Expo's docs say the App Store version of Expo Go is stuck on
    SDK 54 (SDK 55 and later are not published there), so it may refuse this app with

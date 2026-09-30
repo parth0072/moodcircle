@@ -141,7 +141,10 @@ mutation in the PR when it is the only thing guarding a bug.
 
 ## What the user must verify on a device
 
-Say plainly that the slice was not run on iOS and hand over the exact steps. A phone cannot run our code by itself: a
+Say plainly that the slice was not run on iOS and hand over the exact steps. On a Mac, `bash run-mobile.sh` at the repo root
+does the setup (Node, Xcode, dependencies, a local test API that prints the sign-in code, then the iOS Simulator; `--phone`
+for an iPhone with Expo Go, `--api URL` for a deployed server). Its Mac-only parts (Xcode checks, Simulator) were written from
+Expo's docs and have not been run on a Mac; the rest was run on Linux with a stand-in for Expo. A phone cannot run our code by itself: a
 computer runs `npx expo start` and the phone needs an Expo Go build that matches the project's SDK. **Check this first, it
 changed after the skill was written:** Expo's docs (`troubleshooting/expo-go-version-mismatch.mdx`, read 2026-09-30) say the
 App Store build of Expo Go stops at SDK 54 and SDK 55 and later are not published there. A changelog note found through
