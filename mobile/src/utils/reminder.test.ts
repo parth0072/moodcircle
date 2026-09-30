@@ -15,6 +15,8 @@ jest.mock('expo-notifications', () => ({
   requestPermissionsAsync: jest.fn(),
   scheduleNotificationAsync: jest.fn(),
   cancelScheduledNotificationAsync: jest.fn(),
+  setNotificationChannelAsync: jest.fn(),
+  AndroidImportance: { DEFAULT: 3 },
   SchedulableTriggerInputTypes: { DAILY: 'daily' },
 }));
 
@@ -46,7 +48,7 @@ describe('daily reminder', () => {
     expect(n.scheduleNotificationAsync).toHaveBeenCalledWith(
       expect.objectContaining({
         identifier: 'daily-check-in',
-        trigger: { type: 'daily', hour: 20, minute: 30 },
+        trigger: { type: 'daily', hour: 20, minute: 30, channelId: 'daily-check-in' },
       }),
     );
     expect(await isReminderOn()).toBe(true);

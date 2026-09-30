@@ -53,6 +53,44 @@ open `<that address>/health` in Safari on the iPhone: it must show `{"ok":true}`
 `npx expo start --clear`. The sign-in code is emailed by the server; if the server has no email set up, it prints
 `[OTP] ...` in its log instead.
 
+## Get an Android APK from GitHub
+
+The GitHub Action **Android APK** (`.github/workflows/android-apk.yml`) builds an app file you can install on an Android
+phone or emulator. You need nothing on your computer.
+
+**To install it, or share it with someone**, open this link on the Android phone (no GitHub login; it is public, like the
+repository), then open the downloaded file. If the phone asks, allow installs from the browser:
+
+https://github.com/parth0072/moodcircle/releases/latest/download/moodcircle.apk
+
+It always gives the APK of the newest release; the [Releases page](https://github.com/parth0072/moodcircle/releases) keeps
+the older ones.
+
+**To publish a new release**, tag a commit on `main` with a version and push the tag:
+
+```bash
+git checkout main && git pull
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+About 20 minutes later the release appears on the Releases page with `moodcircle.apk` (drafting a release on GitHub, which
+makes the tag, works too). The tag becomes the version Android shows (`v1.0.0` is 1.0.0), and every build has a higher
+version number, so a newer APK installs over an older one. For the next release tag the next version, such as `v1.0.1`.
+
+To try a build without releasing it (another branch, or another server), open the **Actions** tab on GitHub, choose
+**Android APK**, then **Run workflow**. Open the run and download **moodcircle-android-N** under *Artifacts* at the bottom
+(a zip with one `.apk` inside; that download needs a GitHub login).
+
+The app talks to the server in `mobile/.env.production` (the live server). To try another server, type its address into
+*Run workflow* (for example `https://your-domain/moodcircle/api`; it must be `https`, because Android blocks plain `http`).
+
+It is signed with the debug key Expo makes, which is fine for your own devices but **not for the Play Store**. Publishing
+needs a release key and an app bundle (`.aab`); the package id is `com.alphabyteinnovation.moodcircle` (`android.package`
+in `app.json`), which cannot change once the app is on the Play Store. Nothing has been checked on a real Android phone
+yet: layouts, keyboard behaviour and the daily reminder (Android asks permission for notifications on first use) are worth a
+look.
+
 ## What works today
 
 The screens follow the **Moodbloom** design canvas (Claude Design, "Moodbloom – Mood Tracking App"):

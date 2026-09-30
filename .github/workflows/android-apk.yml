@@ -1,0 +1,179 @@
+# Builds an APK you can install on an Android phone or emulator, on GitHub's own machines.
+#
+# Release: push a version tag on a commit of main (git tag v1.0.0 && git push origin v1.0.0). The APK is
+# built and put on the Releases page as moodcircle.apk, where anyone can download it without a login:
+# <repository>/releases/latest/download/moodcircle.apk (see mobile/README.md).
+#
+# Try-out build: Actions tab -> "Android APK" -> Run workflow (any branch, optionally another server).
+# When it finishes, open the run and download the APK under "Artifacts" (a zip with one .apk inside;
+# GitHub asks for a login), copy it to the phone and open it.
+#
+# The APK is signed with the debug key that Expo generates: fine for installing on your own devices,
+# not for the Play Store (that needs a release key and an app bundle; see mobile/README.md).
+# The app talks to the server in mobile/.env.production unless a different address is typed in.
+
+name: Android APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      api_url:
+        description: 'Server the app talks to. Leave empty for the live server (mobile/.env.production).'
+        required: false
+        default: ''
+  push:
+    tags:
+      - 'v[0-9]*'
+
+# A newer build of the same branch or tag makes an older one that is still running pointless.
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  apk:
+    name: Build the APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+    steps:
+      - uses: actions/checkout@v4
+
+      # A release takes its version name from the tag (v1.2.0 becomes 1.2.0): stop early on a tag that is
+      # not a version. Passed through the environment, never pasted into the script.
+      - name: Check the tag is a version
+        if: ${{ github.ref_type == 'tag' }}
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          if ! [[ "$TAG" =~ ^v[0-9]+(\.[0-9]+)*([-+][0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::The tag $TAG is not a version like v1.2.3"
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # Caches Gradle's downloads between runs.
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Install the app's packages
+        run: npm ci
+
+      # Passed through the environment, never pasted into the script.
+      - name: Use the server that was typed in
+        if: ${{ inputs.api_url != '' }}
+        env:
+          API_URL: ${{ inputs.api_url }}
+        run: echo "EXPO_PUBLIC_API_URL=$API_URL" >> "$GITHUB_ENV"
+
+      # The android/ folder is not kept in git: Expo writes it from app.json and the plugins.
+      - name: Create the Android project
+        run: npx expo prebuild --platform android --no-install
+
+      # Every build gets a higher version number, so a newer APK installs over an older one.
+      # A tag also sets the version name that Android shows: v1.2.0 becomes 1.2.0.
+      - name: Number the build
+        env:
+          TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+        run: |
+          sed -i "s/versionCode [0-9][0-9]*/versionCode ${{ github.run_number }}/" android/app/build.gradle
+          if [ -n "$TAG" ]; then
+            sed -i "s/versionName \"[^\"]*\"/versionName \"${TAG#v}\"/" android/app/build.gradle
+          fi
+          grep -nE "versionCode|versionName" android/app/build.gradle
+
+      # Phones (arm64 and the older 32-bit arm) and the emulator (x86_64); not the 32-bit x86 emulator.
+      - name: Build the APK
+        working-directory: mobile/android
+        run: >
+          ./gradlew assembleRelease --no-daemon
+          -PreactNativeArchitectures=arm64-v8a,armeabi-v7a,x86_64
+          -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g"
+
+      - name: Name the APK
+        run: |
+          mkdir -p apk
+          cp android/app/build/outputs/apk/release/app-release.apk "apk/moodcircle-${{ github.run_number }}.apk"
+          ls -lh apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: moodcircle-android-${{ github.run_number }}
+          path: mobile/apk/moodcircle-${{ github.run_number }}.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: How to install it
+        run: |
+          {
+            echo "### Android APK, build ${{ github.run_number }}"
+            echo ""
+            echo "1. Download **moodcircle-android-${{ github.run_number }}** under *Artifacts* at the bottom of this page and unzip it."
+            echo "2. Copy the \`.apk\` to the phone (cable, Drive, email) and open it. If the phone asks, allow installing from that app."
+            echo "3. Talks to: \`${EXPO_PUBLIC_API_URL:-the live server in mobile/.env.production}\`"
+            echo ""
+            echo "Signed with the debug key: for testing on your own devices, not for the Play Store."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # Only a tag becomes a public download. A try-out build (another branch, or another server typed
+  # into Run workflow) stays an artifact, so the public link never starts pointing at it.
+  release:
+    name: Publish the APK for download
+    needs: apk
+    if: ${{ github.ref_type == 'tag' && inputs.api_url == '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # The only job that may write to the repository, and it runs nothing from the app's packages.
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      BUILD: ${{ github.run_number }}
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: moodcircle-android-${{ github.run_number }}
+
+      # releases/latest/download/moodcircle.apk always gives the APK of the newest release, and the older
+      # releases stay on the Releases page. A release that already exists (made by hand on GitHub, or the
+      # tag was pushed again) keeps its title and notes: only the file is replaced.
+      - name: Publish the release
+        run: |
+          mv "moodcircle-$BUILD.apk" moodcircle.apk
+          {
+            echo "Android app (APK) $TAG, made from commit ${GITHUB_SHA::7}."
+            echo ""
+            echo "1. On the phone, tap **moodcircle.apk** under *Assets* below and let it download."
+            echo "2. Open the downloaded file. If the phone asks, allow installs from the browser, then tap Install."
+            echo ""
+            echo "Signed with the debug key: for trying the app, not for the Play Store. It talks to the live server."
+          } > notes.md
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release upload "$TAG" moodcircle.apk --clobber
+          else
+            gh release create "$TAG" moodcircle.apk --title "Android app $TAG" --notes-file notes.md --verify-tag --latest
+          fi
+          {
+            echo "### Published $TAG"
+            echo ""
+            echo "Anyone can download it, no GitHub login: https://github.com/$GH_REPO/releases/latest/download/moodcircle.apk"
+          } >> "$GITHUB_STEP_SUMMARY"
