@@ -53,6 +53,27 @@ open `<that address>/health` in Safari on the iPhone: it must show `{"ok":true}`
 `npx expo start --clear`. The sign-in code is emailed by the server; if the server has no email set up, it prints
 `[OTP] ...` in its log instead.
 
+## Get an Android APK from GitHub
+
+The GitHub Action **Android APK** (`.github/workflows/android-apk.yml`) builds an app file you can install on an Android
+phone or emulator. You need nothing on your computer.
+
+1. On GitHub open the **Actions** tab, choose **Android APK**, then **Run workflow**. (It also runs by itself when `mobile/`
+   changes on `main`.) A build takes about 10 to 15 minutes.
+2. When the run is green, open it and download **moodcircle-android-N** under *Artifacts* at the bottom (a zip with one
+   `.apk` inside; downloads need a GitHub login).
+3. Copy the `.apk` to the phone (cable, Drive, email) and open it. If the phone asks, allow installing from that app.
+   Every build has a higher version number, so a newer APK installs over an older one.
+
+The app talks to the server in `mobile/.env.production` (the live server). To try another server, type its address into
+*Run workflow* (for example `https://your-domain/moodcircle/api`; it must be `https`, because Android blocks plain `http`).
+
+It is signed with the debug key Expo makes, which is fine for your own devices but **not for the Play Store**. Publishing
+needs a release key and an app bundle (`.aab`); the package id is `com.alphabyteinnovation.moodcircle` (`android.package`
+in `app.json`), which cannot change once the app is on the Play Store. Nothing has been checked on a real Android phone
+yet: layouts, keyboard behaviour and the daily reminder (Android asks permission for notifications on first use) are worth a
+look.
+
 ## What works today
 
 The screens follow the **Moodbloom** design canvas (Claude Design, "Moodbloom – Mood Tracking App"):
