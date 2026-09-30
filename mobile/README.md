@@ -7,7 +7,7 @@ The React Native (Expo SDK 57) app for MoodCircle. It talks to the same API as t
 From the project folder (the one above `mobile/`):
 
 ```bash
-git fetch origin && git checkout feat/mobile-mood-tracking && git pull
+git fetch origin && git checkout main && git pull
 bash run-mobile.sh
 ```
 
@@ -63,8 +63,8 @@ The screens follow the **Moodbloom** design canvas (Claude Design, "Moodbloom â€
 - **Insights:** Week or Month, bubbles sized by how often each emotion showed up, the last seven days, and a balance score.
 - **Profile:** your totals (streak, check-ins, top mood), the daily 8:30 pm reminder, edit name, Log out.
 
-Entries are stored on the server (personal entries API, `/api/entries`), so the server must include the
-`feat/personal-mood-entries` change; `bash run-mobile.sh` starts a local server that already does. Left out on purpose: the
+Entries are stored on the server (personal entries API, `/api/entries`), so a live server must be deployed from the latest
+`main`; `bash run-mobile.sh` starts a local server that already has it. Left out on purpose: the
 design's soundscapes and music player, Apple/Google sign-in (the server has neither), dark mode. None of it has been run on
 a real iPhone yet.
 

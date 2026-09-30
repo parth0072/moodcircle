@@ -1,11 +1,9 @@
 # Roadmap
 
-Status on 2026-09-30: **Phases 0 and 1 are built, then the app was rebuilt from the Moodbloom design canvas**, on stacked
-branches that have not been opened as PRs unless the user said so (check `git branch -r` and `main`):
-`feat/mobile-scaffold` (Phase 0), `feat/mobile-sign-in` (Phase 1) and `feat/mobile-mood-tracking` (the canvas: account
-screens, Home, Log a mood, Insights, Profile). The personal entries API it needs is `feat/personal-mood-entries`. The
-skill itself is merged (PR #7). The canvas is a personal tracker with no groups, so Phase 2 below (groups and feed) starts
-only when the user says go. Nothing has run on an iPhone.
+Status on 2026-09-30: **Phases 0 and 1 are built, then the app was rebuilt from the Moodbloom design canvas** (account
+screens, Home, Log a mood, Insights, Profile). All of it is merged into `main`, together with the personal entries API it
+needs (`/api/entries`) and the skill itself (PR #7). The canvas is a personal tracker with no groups, so Phase 2 below
+(groups and feed) starts only when the user says go. Nothing has run on an iPhone.
 
 ## Contents
 - Phases
