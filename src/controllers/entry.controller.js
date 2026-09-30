@@ -4,6 +4,7 @@ const { ok, fail } = require('../utils/response');
 const { todayIST } = require('../utils/timezone');
 const { diffDays, todayUTC } = require('../utils/dates');
 const { currentStreak } = require('../utils/entry-stats');
+const { syncAutoShare } = require('../utils/auto-share');
 
 const MAX_RANGE_DAYS = 366;
 const STREAK_LOOKBACK_DAYS = 400;
@@ -44,6 +45,7 @@ function createEntry(req, res) {
     createdAt: now,
     updatedAt: now,
   });
+  syncAutoShare(req.user.id); // groups the user shares their daily mood with
   return ok(res, { entry }, 201);
 }
 
@@ -77,6 +79,7 @@ function updateEntry(req, res) {
     note: note === undefined ? existing.note : note.trim(),
     updatedAt: new Date().toISOString(),
   });
+  syncAutoShare(req.user.id);
   return ok(res, { entry });
 }
 
@@ -85,6 +88,7 @@ function deleteEntry(req, res) {
   if (!entries.remove(req.params.id, req.user.id)) {
     return fail(res, 'Entry not found', 'ENTRY_NOT_FOUND', 404);
   }
+  syncAutoShare(req.user.id);
   return ok(res, { message: 'Entry deleted' });
 }
 

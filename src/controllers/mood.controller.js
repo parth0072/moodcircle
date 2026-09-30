@@ -3,11 +3,14 @@ const { moods, groups, users, reactions } = require('../stores');
 const { ok, fail } = require('../utils/response');
 const { todayIST, daysAgoIST } = require('../utils/timezone');
 const { updateStreak } = require('../utils/streak');
+const { levelFor, emotionOf } = require('../utils/group-moods');
 
 // POST /groups/:groupId/moods
+// The post is an `emotion` (the Moodbloom app) or a `level` 1-5 (the website). Every post keeps a
+// level for the vibe score; with an emotion the level is worked out from it.
 function postMood(req, res) {
   const { groupId } = req.params;
-  const { level, note = '', privateNote = '', isAnonymous = false } = req.body;
+  const { level, emotion, note = '', privateNote = '', isAnonymous = false } = req.body;
   const userId = req.user.id;
 
   const group = groups.get(groupId);
@@ -17,13 +20,30 @@ function postMood(req, res) {
   }
 
   const today = todayIST();
+  const postLevel = emotion ? levelFor(emotion) : level;
 
   // One mood per user per group per day (IST)
   const existing = [...moods.values()].find(
     (m) => m.userId === userId && m.groupId === groupId && m.date === today
   );
-  if (existing) {
+  if (existing && existing.source !== 'auto') {
     return fail(res, 'You have already checked in today for this group', 'ALREADY_CHECKED_IN', 409);
+  }
+
+  // A post shared automatically from the journal can be replaced by the person's own post (to add
+  // a few words): it then stays as they wrote it.
+  if (existing) {
+    const own = {
+      ...existing,
+      level: postLevel,
+      emotion: emotion || null,
+      note: note.trim(),
+      privateNote: privateNote.trim(),
+      isAnonymous,
+      source: 'manual',
+    };
+    moods.set(own.id, own);
+    return ok(res, { mood: toFeedItem(own, userId, group) });
   }
 
   const id = crypto.randomUUID();
@@ -31,10 +51,12 @@ function postMood(req, res) {
     id,
     userId,
     groupId,
-    level,
+    level: postLevel,
+    emotion: emotion || null,
     note: note.trim(),
     privateNote: privateNote.trim(), // never exposed in feed
     isAnonymous,
+    source: 'manual',
     date: today,
     createdAt: new Date().toISOString(),
   };
@@ -42,7 +64,7 @@ function postMood(req, res) {
   moods.set(id, mood);
   updateStreak(userId);
 
-  return ok(res, { mood: toFeedItem(mood, userId) }, 201);
+  return ok(res, { mood: toFeedItem(mood, userId, group) }, 201);
 }
 
 // GET /groups/:groupId/moods/today
@@ -71,7 +93,7 @@ function getTodayFeed(req, res) {
       : null;
 
   return ok(res, {
-    feed: todayMoods.map((m) => toFeedItem(m, userId)),
+    feed: todayMoods.map((m) => toFeedItem(m, userId, group)),
     vibeScore,
     checkedIn,
     totalMembers,
@@ -99,19 +121,22 @@ function getMoodHistory(req, res) {
   const history = [...moods.values()]
     .filter((m) => m.groupId === groupId && m.date >= cutoff)
     .sort((a, b) => a.date.localeCompare(b.date))
-    .map((m) => toFeedItem(m, userId));
+    .map((m) => toFeedItem(m, userId, group));
 
   return ok(res, { history, days });
 }
 
 // ── Helper ────────────────────────────────────────────
-function toFeedItem(mood, requesterId) {
+function toFeedItem(mood, requesterId, group) {
   const isOwn = mood.userId === requesterId;
   const poster = !mood.isAnonymous ? users.get(mood.userId) : null;
 
   const moodReactions = [...reactions.values()]
     .filter((r) => r.moodId === mood.id)
     .map((r) => ({ id: r.id, type: r.type, userId: r.userId, createdAt: r.createdAt }));
+
+  // A group set to "mood only" shows other people's moods without their words.
+  const hideNote = group.showNotes === false && !isOwn;
 
   return {
     id: mood.id,
@@ -120,7 +145,8 @@ function toFeedItem(mood, requesterId) {
       : { id: poster?.id, phone: poster?.phone, name: poster?.name || null, username: poster?.username || null, avatar: poster?.avatar || null },
     isOwn,
     level: mood.level,
-    note: mood.note,
+    emotion: emotionOf(mood),
+    note: hideNote ? '' : mood.note,
     // privateNote intentionally omitted
     isAnonymous: mood.isAnonymous,
     date: mood.date,
