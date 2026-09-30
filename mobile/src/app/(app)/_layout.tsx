@@ -21,8 +21,14 @@ export default function AppLayout() {
   }, [next, router]);
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack
+      screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}
+    >
       <Stack.Screen name="index" />
+      <Stack.Screen name="log" />
+      <Stack.Screen name="insights" />
+      <Stack.Screen name="profile" />
+      <Stack.Screen name="edit-profile" />
       <Stack.Screen
         name="set-password"
         options={{

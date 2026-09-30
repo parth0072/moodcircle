@@ -23,6 +23,8 @@ interface TextFieldProps extends Pick<
   | 'multiline'
 > {
   label: string;
+  /** Keep the label for screen readers but do not draw it (a screen supplies its own heading). */
+  hideLabel?: boolean;
   /** A password field: the text is hidden, with a Show/Hide button inside the field. */
   secure?: boolean;
   error?: string | null;
@@ -30,12 +32,20 @@ interface TextFieldProps extends Pick<
 }
 
 /** Labelled input from the design: 52 high, 16 radius, 1.5 tan border, brand border on focus. */
-export function TextField({ label, secure, error, testID, multiline, ...input }: TextFieldProps) {
+export function TextField({
+  label,
+  hideLabel,
+  secure,
+  error,
+  testID,
+  multiline,
+  ...input
+}: TextFieldProps) {
   const [focused, setFocused] = useState(false);
   const [shown, setShown] = useState(false);
   return (
     <View style={styles.field}>
-      <AppText variant="label">{label}</AppText>
+      {hideLabel ? null : <AppText variant="label">{label}</AppText>}
       <View>
         <TextInput
           {...input}

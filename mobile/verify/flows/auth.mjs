@@ -10,7 +10,7 @@ export const name = 'auth';
 
 const INTRO = 'Notice how you feel, one day at a time';
 const WELCOME = 'A kinder place for your feelings';
-const HOME = 'Home (placeholder)'; // becomes the real Home's prompt once that screen exists
+const HOME = 'How did today feel?'; // the Home screen's prompt while nothing is logged today
 
 export default async function auth({ page, baseUrl, shot, expect, waitForText, pageText, allow }) {
   // Deliberate failures below: wrong code, wrong password.

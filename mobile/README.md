@@ -53,9 +53,20 @@ base path if the server uses one: the deployed HTTPS URL (for example
 
 ## What works today
 
-Sign up and sign in with an emailed code or a password, profile setup (name, username, avatar), "what makes you feel good",
-and the quick-login password offer. After that you land on a placeholder Home with a Sign out button: groups, the mood feed,
-check-in and the other tabs are the next slices. None of it has been run on a real iPhone yet.
+The screens follow the **Moodbloom** design canvas (Claude Design, "Moodbloom – Mood Tracking App"):
+
+- **Account:** the intro slides (shown once), Welcome, Sign up (with the emailed code), Log in with a password, and
+  Forgot password (emailed code, then a new password).
+- **Home:** greeting, six emotion buttons (one tap logs how today feels, tap again to undo, tap another to correct it),
+  and today's check-ins.
+- **Log a mood:** emotion, how strong, tags and a note; also opens an existing entry to add details.
+- **Insights:** Week or Month, bubbles sized by how often each emotion showed up, the last seven days, and a balance score.
+- **Profile:** your totals (streak, check-ins, top mood), the daily 8:30 pm reminder, edit name, Log out.
+
+Entries are stored on the server (personal entries API, `/api/entries`), so the server must include the
+`feat/personal-mood-entries` change; `bash run-mobile.sh` starts a local server that already does. Left out on purpose: the
+design's soundscapes and music player, Apple/Google sign-in (the server has neither), dark mode. None of it has been run on
+a real iPhone yet.
 
 ## Checks
 

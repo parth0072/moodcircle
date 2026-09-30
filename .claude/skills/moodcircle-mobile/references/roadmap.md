@@ -1,8 +1,11 @@
 # Roadmap
 
-Status on 2026-09-29: **Phases 0 and 1 are built**, on two stacked branches that have not been opened as PRs unless the user
-said so (check `git branch -r` and `main`): `feat/mobile-scaffold` (Phase 0) and `feat/mobile-sign-in` (Phase 1). The
-skill itself is merged (PR #7). Phase 2 starts only when the user says go. Nothing has run on an iPhone.
+Status on 2026-09-30: **Phases 0 and 1 are built, then the app was rebuilt from the Moodbloom design canvas**, on stacked
+branches that have not been opened as PRs unless the user said so (check `git branch -r` and `main`):
+`feat/mobile-scaffold` (Phase 0), `feat/mobile-sign-in` (Phase 1) and `feat/mobile-mood-tracking` (the canvas: account
+screens, Home, Log a mood, Insights, Profile). The personal entries API it needs is `feat/personal-mood-entries`. The
+skill itself is merged (PR #7). The canvas is a personal tracker with no groups, so Phase 2 below (groups and feed) starts
+only when the user says go. Nothing has run on an iPhone.
 
 ## Contents
 - Phases
@@ -24,6 +27,7 @@ an app PR.
 |---|---|---|
 | 0 Scaffold **(built)** | An empty app that builds, lints, tests, exports, and gates three placeholder groups | Expo project in `mobile/`, templates copied, gates green. The CI workflow is still open (recommended, ask first) |
 | 1 Sign in **(built)** | A user can sign in, set up a profile, and stay signed in | sign-in (code and password on one screen), verify, quick-login password sheet, profile setup, joy setup; flows `auth` and `auth-returning`; a placeholder Home with Sign out. Still to do from the original list: joy **edit** and profile edit (they live on the Me tab, Phase 3) and the `session-resilience` flow (it needs an authenticated screen, so it lands with the Home feed in Phase 2) |
+| 1b Moodbloom canvas **(built)** | The personal mood tracker from the design canvas | account screens redone to the canvas; Home (one-tap check-in, today's list), Log a mood (strength, tags, note, edit an entry), Insights (week or month, bubbles, week dots, balance score), Profile (totals, daily reminder, edit name, Log out); entries on the server (`/api/entries`). Left out: soundscapes and music player, Apple/Google sign-in, dark mode, privacy and passcode, export, help. Not built or run: flows for the new screens (`auth` only needed its Home marker), `contract-check` for `/entries` |
 | 2 Groups and feed | The daily loop works | group setup (create, join), group switcher, Home feed (vibe row, member dots, streak pill, mood cards), check-in sheet, reactions, nudge, mind-divert |
 | 3 Insight | The rest of the tabs | History (7/30/90 days, chart, stats, share), Streak (real 28-day calendar), Me (edit profile, joy list, invite code, sign out, set password) |
 | 4 Ship | TestFlight, then the store | `eas.json`, icon and splash, push for nudges, daily local reminder, crash reporting, privacy policy, account deletion, report and block, TestFlight build |

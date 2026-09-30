@@ -9,10 +9,12 @@ The web app (`public/`, backend in `src/`) is finished and deployed. This skill 
 one standard architecture, one pinned stack, code that is already proven, and a way to verify work in a container that has
 no iPhone. It exists so that every session starts from the same decisions instead of re-deriving them.
 
-**Status (2026-09-29): Phases 0 and 1 are built** on stacked branches `feat/mobile-scaffold` and `feat/mobile-sign-in`
-(check `git branch -r` and `main` for what has merged): the `mobile/` Expo app boots, gates three route groups, and has
-sign-in (code and password), verification, profile setup, "what makes you feel good" and the quick-login password offer.
-Phase 2 (groups and the Home feed) is next and waits for the user's go-ahead. Nothing has run on an iPhone.
+**Status (2026-09-30): Phases 0 and 1 are built, and the app was then rebuilt from the Moodbloom design canvas** (a
+personal mood tracker, not the web app's groups) on stacked branches `feat/mobile-scaffold`, `feat/mobile-sign-in` and
+`feat/mobile-mood-tracking` (check `git branch -r` and `main` for what has merged; the API side is
+`feat/personal-mood-entries`): the `mobile/` Expo app boots, gates three route groups, and has the intro, sign up with an
+emailed code, log in, forgot password, Home (quick check-in), Log a mood, Insights and Profile (reminder, log out).
+Groups and the group feed are not in that design and wait for the user's decision. Nothing has run on an iPhone.
 `references/roadmap.md` has the phases, decisions taken and the open decisions.
 
 **`mobile/` is now the source of truth.** `assets/` only seeds a brand-new scaffold; never copy it over an existing

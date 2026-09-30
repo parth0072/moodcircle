@@ -68,6 +68,18 @@ describe('ProfileSetupScreen', () => {
     expect(useSessionStore.getState().user?.name).toBe('Asha K');
   });
 
+  it('has no back button when it is the first screen', async () => {
+    const view = await renderScreen(<ProfileSetupScreen mode="setup" />);
+    expect(view.queryByRole('button', { name: 'Back' })).toBeNull();
+  });
+
+  it('goes back when it is pushed on top of another screen', async () => {
+    const onBack = jest.fn();
+    const view = await renderScreen(<ProfileSetupScreen mode="edit" onBack={onBack} />);
+    await fireEvent.press(view.getByRole('button', { name: 'Back' }));
+    expect(onBack).toHaveBeenCalledTimes(1);
+  });
+
   it('keeps the typed name and says so when saving fails', async () => {
     jest.mocked(updateProfile).mockRejectedValue(new Error('offline'));
     const view = await renderScreen(<ProfileSetupScreen mode="setup" />);
