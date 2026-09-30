@@ -2,7 +2,10 @@
 #
 # Run it by hand: Actions tab -> "Android APK" -> Run workflow. It also runs by itself when the app
 # (mobile/) changes on main. When it finishes, open the run and download the APK under "Artifacts"
-# (a zip with one .apk inside), copy it to the phone and open it.
+# (a zip with one .apk inside; GitHub asks for a login), copy it to the phone and open it.
+#
+# A build from main that uses the live server is also published on the Releases page, where anyone can
+# download the .apk without a login: <repository>/releases/latest/download/moodcircle.apk (see mobile/README.md).
 #
 # The APK is signed with the debug key that Expo generates: fine for installing on your own devices,
 # not for the Play Store (that needs a release key and an app bundle; see mobile/README.md).
@@ -111,3 +114,45 @@ jobs:
             echo ""
             echo "Signed with the debug key: for testing on your own devices, not for the Play Store."
           } >> "$GITHUB_STEP_SUMMARY"
+
+  # Only a build from main that uses the live server becomes the public download: an APK built for
+  # another server (typed into Run workflow) or from another branch stays an artifact, so the public
+  # link never starts pointing at it.
+  release:
+    name: Publish the APK for download
+    needs: apk
+    if: ${{ github.ref == 'refs/heads/main' && inputs.api_url == '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # The only job that may write to the repository, and it runs nothing from the app's packages.
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      BUILD: ${{ github.run_number }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: moodcircle-android-${{ github.run_number }}
+
+      # A new release for every build, marked as the latest: releases/latest/download/moodcircle.apk
+      # always gives the newest APK, and the older ones stay on the Releases page.
+      - name: Publish the release
+        run: |
+          mv "moodcircle-$BUILD.apk" moodcircle.apk
+          {
+            echo "Android app (APK), build $BUILD, made from commit ${GITHUB_SHA::7}."
+            echo ""
+            echo "1. On the phone, tap **moodcircle.apk** under *Assets* below and let it download."
+            echo "2. Open the downloaded file. If the phone asks, allow installs from the browser, then tap Install."
+            echo ""
+            echo "Signed with the debug key: for trying the app, not for the Play Store. It talks to the live server."
+          } > notes.md
+          tag="android-$BUILD"
+          if gh release view "$tag" > /dev/null 2>&1; then
+            gh release upload "$tag" moodcircle.apk --clobber
+          else
+            gh release create "$tag" moodcircle.apk --title "Android app, build $BUILD" --notes-file notes.md --target "$GITHUB_SHA" --latest
+          fi
+          echo "Public download link: https://github.com/$GH_REPO/releases/latest/download/moodcircle.apk" >> "$GITHUB_STEP_SUMMARY"

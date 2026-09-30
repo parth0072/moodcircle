@@ -58,12 +58,18 @@ open `<that address>/health` in Safari on the iPhone: it must show `{"ok":true}`
 The GitHub Action **Android APK** (`.github/workflows/android-apk.yml`) builds an app file you can install on an Android
 phone or emulator. You need nothing on your computer.
 
-1. On GitHub open the **Actions** tab, choose **Android APK**, then **Run workflow**. (It also runs by itself when `mobile/`
-   changes on `main`.) A build takes about 20 minutes.
-2. When the run is green, open it and download **moodcircle-android-N** under *Artifacts* at the bottom (a zip with one
-   `.apk` inside; downloads need a GitHub login).
-3. Copy the `.apk` to the phone (cable, Drive, email) and open it. If the phone asks, allow installing from that app.
-   Every build has a higher version number, so a newer APK installs over an older one.
+**To install it, or share it with someone**, open this link on the Android phone (no GitHub login; it is public, like the
+repository), then open the downloaded file. If the phone asks, allow installs from the browser:
+
+https://github.com/parth0072/moodcircle/releases/latest/download/moodcircle.apk
+
+It always gives the newest build from `main`; the [Releases page](https://github.com/parth0072/moodcircle/releases) keeps
+the older ones. Every build has a higher version number, so a newer APK installs over an older one.
+
+A change to `mobile/` on `main` builds and publishes a new one by itself (about 20 minutes). To make one by hand, open the
+**Actions** tab on GitHub, choose **Android APK**, then **Run workflow**. A build from another branch, or for another
+server, is not published: open the run and download **moodcircle-android-N** under *Artifacts* at the bottom (a zip with
+one `.apk` inside; that download needs a GitHub login).
 
 The app talks to the server in `mobile/.env.production` (the live server). To try another server, type its address into
 *Run workflow* (for example `https://your-domain/moodcircle/api`; it must be `https`, because Android blocks plain `http`).
