@@ -38,6 +38,7 @@ writing new ones. The verified Phase 0 seed is in `assets/` for a fresh scaffold
 ```
 mobile/
 ├── app.json  eas.json  package.json  tsconfig.json  eslint.config.js  .prettierrc  .env.example
+├── .env.development  .env.production   (committed: the live server address; a personal .env.local overrides)
 ├── assets/                    icon, splash, images (fonts come from @expo-google-fonts)
 └── src/
     ├── app/                   ROUTES ONLY. Nothing else, ever (tests, types and helpers would become routes)

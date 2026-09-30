@@ -1,13 +1,15 @@
 #!/bin/bash
 # MoodCircle – run the mobile app on your Mac
-# Starts a local test copy of the API (or uses your own server), installs what the app needs,
-# then starts Expo so you can open the app in the iOS Simulator or on your iPhone.
+# Installs what the app needs, then starts Expo so you can open the app in the iOS Simulator or on
+# your iPhone. The app talks to your live server (the address in mobile/.env.development), or to a
+# throwaway test copy of the API on this Mac with --local.
 #
-# Usage:  bash run-mobile.sh                iOS Simulator + local test server (needs Xcode)
+# Usage:  bash run-mobile.sh                iOS Simulator + your live server (needs Xcode)
 #         bash run-mobile.sh --phone        iPhone with Expo Go: shows a QR code to scan
-#         bash run-mobile.sh --api URL      use your deployed server instead of a local test one,
+#         bash run-mobile.sh --local        use a throwaway test server on this Mac instead of the live one
+#         bash run-mobile.sh --api URL      use another server,
 #                                           e.g. --api https://your-domain.com/moodcircle/api
-#         bash run-mobile.sh --reset        empty the local test database first (see sign-up again)
+#         bash run-mobile.sh --reset        with --local: empty the test database first (see sign-up again)
 #         bash run-mobile.sh --check        check the setup, then stop
 #         bash run-mobile.sh --help         all options
 
@@ -17,6 +19,8 @@ MOBILE="$ROOT/mobile"
 
 TARGET="simulator"   # simulator | phone
 API_URL=""
+API_FROM_ENV=0       # 1 when API_URL came from the app's .env files
+LOCAL=0              # 1: start a throwaway test server on this Mac
 PORT=""
 RESET=0
 SKIP_INSTALL=0
@@ -36,10 +40,12 @@ MoodCircle – run the mobile app on your Mac
 
   --simulator      open the app in the iOS Simulator (default; needs Xcode)
   --phone          open the app on your iPhone with Expo Go (scan the QR code)
-  --api URL        talk to this server instead of starting a local test server,
-                   for example https://your-domain.com/moodcircle/api
-  --port N         port for the local test server (default: any free port)
-  --reset          empty the local test database first, to see sign-up again
+  --local          use a throwaway test server on this Mac instead of your live server
+                   (the sign-in code is printed in this window; nothing is emailed)
+  --api URL        use this server, for example https://your-domain.com/moodcircle/api
+                   (without --local or --api, the address in mobile/.env.development is used)
+  --port N         with --local: port for the test server (default: any free port)
+  --reset          with --local: empty the test database first, to see sign-up again
   --skip-install   do not run npm install
   --check          check the setup (Node, dependencies, server), then stop
   -h, --help       show this help
@@ -50,6 +56,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --simulator)    TARGET="simulator" ;;
     --phone)        TARGET="phone" ;;
+    --local)        LOCAL=1 ;;
     --api)          [ -n "$2" ] || die "--api needs an address, for example: --api https://your-domain.com/api"
                     API_URL="$2"; shift ;;
     --port)         case "$2" in ''|*[!0-9]*) die "--port needs a number, for example: --port 3000" ;; esac
@@ -156,21 +163,50 @@ lan_ip() {
   fi
 }
 
+# The server address in the app's env files, in the order Expo reads them (the first one found wins).
+# mobile/.env.development holds the live server; mobile/.env.local (not in git) can override it.
+env_file_api_url() {
+  local file value
+  for file in .env.development.local .env.local .env.development .env; do
+    [ -f "$MOBILE/$file" ] || continue
+    value="$(sed -n 's/^[[:space:]]*EXPO_PUBLIC_API_URL[[:space:]]*=[[:space:]]*//p' "$MOBILE/$file" \
+      | tail -n 1 | tr -d '\r' | sed -e "s/^[\"']//" -e "s/[\"'][[:space:]]*\$//" -e 's/[[:space:]]*$//')"
+    case "$value" in
+      ''|*your-domain*) continue ;;   # empty, or still the placeholder from .env.example
+    esac
+    echo "$value"
+    return 0
+  done
+  return 0
+}
+
 use_remote_server() {
   API_URL="${API_URL%/}"
   case "$API_URL" in
     http://*|https://*) ;;
-    *) die "--api must start with http:// or https:// (got: $API_URL)" ;;
+    *) die "The server address must start with http:// or https:// (got: $API_URL)" ;;
   esac
   case "$API_URL" in
     */api) ;;
     *) warn "The address normally ends with /api, for example https://your-domain.com/api (got: $API_URL)" ;;
   esac
-  [ "$RESET" -eq 0 ] || warn "--reset only applies to the local test server; ignored."
+  [ "$RESET" -eq 0 ] || warn "--reset only applies with --local; ignored."
+  if [ "$API_FROM_ENV" -eq 1 ]; then
+    echo "Using your server, the address in mobile/.env.development (add --local for a test server on this Mac)."
+  fi
   if curl -fsS -m 15 "$API_URL/health" 2>/dev/null | grep -q '"ok":true'; then
     echo "Reachable: $API_URL/health"
   else
-    die "This Mac could not reach $API_URL/health (it should show {\"ok\":true}). Open that address in a browser to see what is wrong."
+    hint=""
+    [ "$API_FROM_ENV" -eq 0 ] || hint="
+The address comes from mobile/.env.development. To try the app without your server: bash run-mobile.sh --local"
+    die "This Mac could not reach $API_URL/health (it should show {\"ok\":true}). Open that address in a browser to see what is wrong.$hint"
+  fi
+  # The mood screens need /entries, which older server releases do not have. Without signing in, the
+  # route answers 401 when it exists and 404 when the server has not been updated yet.
+  entries_code="$(curl -s -o /dev/null -m 15 -w '%{http_code}' "$API_URL/entries/stats?date=2000-01-01" || true)"
+  if [ "$entries_code" = "404" ]; then
+    warn "This server does not have the mood entries yet (/entries answered 404). Signing in will work, but the mood screens will show errors until the latest main is deployed on the server (run deploy.sh there)."
   fi
 }
 
@@ -213,6 +249,15 @@ start_local_server() {
     done ) &
   WATCH_PID=$!
 }
+
+# Which server does the app talk to? --api wins, then --local; otherwise the address in the app's env files.
+if [ "$LOCAL" -eq 1 ] && [ -n "$API_URL" ]; then
+  die "Use either --local or --api, not both."
+fi
+if [ "$LOCAL" -eq 0 ] && [ -z "$API_URL" ]; then
+  API_URL="$(env_file_api_url)"
+  if [ -n "$API_URL" ]; then API_FROM_ENV=1; fi
+fi
 
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/moodcircle-run.XXXXXX")"
 
