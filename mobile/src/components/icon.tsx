@@ -43,6 +43,23 @@ const ICONS = {
     </>
   ),
   check: <Polyline points="20 6 9 17 4 12" />,
+  // Groups: two people.
+  users: (
+    <>
+      <Circle cx="9" cy="8" r="3.5" />
+      <Circle cx="17" cy="9" r="2.5" />
+      <Path d="M2.5 20c1-3.5 3.5-5.5 6.5-5.5s5.5 2 6.5 5.5M15.5 14.5c2.5 0 4.5 1.5 5.5 4.5" />
+    </>
+  ),
+  // Invite people: a person with a plus.
+  'user-plus': (
+    <>
+      <Circle cx="9" cy="8" r="4" />
+      <Path d="M2 21c1-4 3.5-6 7-6s6 2 7 6M19 8v6M16 11h6" />
+    </>
+  ),
+  plus: <Path d="M12 5v14M5 12h14" />,
+  x: <Path d="M5.33 5.33l13.34 13.34M18.67 5.33L5.33 18.67" />,
 } as const;
 
 export type IconName = keyof typeof ICONS;

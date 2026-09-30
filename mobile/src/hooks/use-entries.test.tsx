@@ -42,7 +42,7 @@ describe('entry hooks', () => {
     expect(listEntries).toHaveBeenCalledWith('2026-09-30', '2026-09-30');
   });
 
-  it('refreshes every entries query after a create, an update and a delete', async () => {
+  it('refreshes every entries query and every group screen after a create, an update and a delete', async () => {
     jest.mocked(createEntry).mockResolvedValue(entry);
     jest.mocked(updateEntry).mockResolvedValue(entry);
     jest.mocked(deleteEntry).mockResolvedValue(undefined);
@@ -62,8 +62,14 @@ describe('entry hooks', () => {
       await remove.result.current.mutateAsync('e1');
     });
 
-    expect(invalidate).toHaveBeenCalledTimes(3);
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['entries'] });
+    // Each change refreshes the entries, and the groups too: the server can share the day's mood with them.
+    expect(invalidate).toHaveBeenCalledTimes(6);
+    expect(
+      invalidate.mock.calls.filter(([filters]) => filters?.queryKey?.[0] === 'entries'),
+    ).toHaveLength(3);
+    expect(
+      invalidate.mock.calls.filter(([filters]) => filters?.queryKey?.[0] === 'groups'),
+    ).toHaveLength(3);
   });
 
   it('does not refresh anything when a save fails', async () => {

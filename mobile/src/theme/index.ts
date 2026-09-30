@@ -4,6 +4,8 @@ export {
   avatarColors,
   colors,
   emotionColors,
+  groupColors,
+  groupOnColor,
   moodColors,
   moodLabels,
   type MoodLevel,

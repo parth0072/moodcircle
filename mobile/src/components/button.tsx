@@ -9,6 +9,7 @@ import {
 import { accents, colors, radius } from '@/theme';
 
 import { AppText } from './app-text';
+import { Icon, type IconName } from './icon';
 
 type Variant = 'primary' | 'accent' | 'outline' | 'danger';
 
@@ -23,6 +24,8 @@ interface ButtonProps {
   /** Shows a spinner, blocks repeat taps, and keeps the label available to screen readers. */
   loading?: boolean;
   disabled?: boolean;
+  /** A small icon before the label, like the plus on "Create a group". */
+  icon?: IconName;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -40,6 +43,7 @@ export function Button({
   variant = 'primary',
   loading = false,
   disabled = false,
+  icon,
   style,
 }: ButtonProps) {
   const look = looks[variant];
@@ -61,9 +65,12 @@ export function Button({
       {loading ? (
         <ActivityIndicator size="small" color={look.spinner} />
       ) : (
-        <AppText variant={look.label} color={look.text}>
-          {title}
-        </AppText>
+        <>
+          {icon ? <Icon name={icon} size={20} strokeWidth={2.2} color={look.spinner} /> : null}
+          <AppText variant={look.label} color={look.text}>
+            {title}
+          </AppText>
+        </>
       )}
     </Pressable>
   );
@@ -74,6 +81,8 @@ const styles = StyleSheet.create({
     minHeight: 56,
     paddingHorizontal: 20,
     borderRadius: radius.full,
+    flexDirection: 'row',
+    gap: 10,
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'stretch',

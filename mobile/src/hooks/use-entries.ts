@@ -10,6 +10,8 @@ import {
   type NewEntry,
 } from '@/api/entries';
 
+import { groupKeys } from './group-keys';
+
 // Keys start with the resource name so one invalidation refreshes every screen that shows entries.
 export const entryKeys = {
   all: ['entries'] as const,
@@ -27,10 +29,17 @@ export function useEntryStats(today: string) {
   return useQuery({ queryKey: entryKeys.stats(today), queryFn: () => getEntryStats(today) });
 }
 
-/** Any change to entries can change the day list, the insights and the stats: refresh them all. */
+/**
+ * Any change to entries can change the day list, the insights and the stats: refresh them all.
+ * It can also change a group: the server shares the day's mood with the groups the person chose.
+ */
 function useRefreshEntries() {
   const queryClient = useQueryClient();
-  return () => queryClient.invalidateQueries({ queryKey: entryKeys.all });
+  return () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: entryKeys.all }),
+      queryClient.invalidateQueries({ queryKey: groupKeys.all }),
+    ]);
 }
 
 export function useCreateEntry() {
