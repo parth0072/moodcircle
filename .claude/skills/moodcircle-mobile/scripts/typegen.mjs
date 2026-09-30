@@ -4,24 +4,31 @@
 // Only the Metro dev server writes them (`expo export` does not), so start it,
 // wait for both files, then stop it. POSIX only (uses a process group).
 //
-// Usage: node typegen.mjs [expoProjectDir=mobile] [timeoutSeconds=120]
+// Run it with --force after adding or removing routes: the typed-route file is only rewritten
+// by the dev server, so `tsc` sees stale routes until it is regenerated.
+//
+// Usage: node typegen.mjs [expoProjectDir=mobile] [timeoutSeconds=120] [--force]
 
 import { spawn } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, rmSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { resolve, join } from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
 
-const dir = resolve(process.argv[2] ?? 'mobile');
-const timeoutMs = Number(process.argv[3] ?? 120) * 1000;
+const force = process.argv.includes('--force');
+const [dirArg, timeoutArg] = process.argv.slice(2).filter((a) => a !== '--force');
+const dir = resolve(dirArg ?? 'mobile');
+const timeoutMs = Number(timeoutArg ?? 120) * 1000;
 const targets = [join(dir, 'expo-env.d.ts'), join(dir, '.expo/types/router.d.ts')];
 
 if (!existsSync(join(dir, 'package.json'))) {
   console.error(`typegen: no package.json in ${dir}`);
   process.exit(2);
 }
-if (targets.every(existsSync)) {
-  console.log('typegen: already generated');
+if (force) {
+  for (const t of targets) rmSync(t, { force: true });
+} else if (targets.every(existsSync)) {
+  console.log('typegen: already generated (use --force after adding or removing routes)');
   process.exit(0);
 }
 

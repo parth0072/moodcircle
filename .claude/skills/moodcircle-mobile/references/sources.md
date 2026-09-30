@@ -26,6 +26,7 @@ own `AGENTS.md` says the same: read the installed `expo` major version, then the
 | `expo lint`, Prettier, TypeScript 6 `types`, typed routes, Jest and RNTL 14 behaviour | run in the throwaway project | commands in `testing-and-verification.md` |
 | Backend contract | this repo: `src/routes`, `src/controllers` | read, then proven by `scripts/contract-check.mjs` |
 | Web behaviour and design | this repo: `public/js/*.js`, `public/css/app.css`, `public/index.html` | read |
+| Running SDK 57 on a physical iPhone (which Expo Go, the sign-in requirement) | Expo docs source: `docs/scenes/get-started/set-up-your-environment/instructions/iosPhysicalExpoGo.mdx` (same on branches `sdk-55` to `sdk-57`; `main` adds the sign-in step), `docs/pages/troubleshooting/expo-go-version-mismatch.mdx`, `expo-go-sign-in-required.mdx`, `docs/pages/get-started/start-developing.mdx`; search snippets of the `expo.dev` changelog and the App Store listing (hosts blocked) | raw GitHub, 2026-09-30. The snippets disagree on whether an SDK 57 Expo Go reached the App Store: unresolved, so the first launch on a device decides |
 | App Store rules (account deletion, user-generated content, IAP) | recalled, not fetched | flagged in `roadmap.md` as needing verification at submission |
 
 Everything the skill states about running code (the harness, the templates, the flows, the contract check, the lint and

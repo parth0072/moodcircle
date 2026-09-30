@@ -5,7 +5,8 @@ The layout follows Expo's own guidance (the `expo-project-structure`, `expo-rout
 open for us: an `api/` boundary, `stores/`, and `theme/`. Where we deliberately differ from Expo's
 advice, the section says so and why.
 
-Verified pieces are in `assets/` (copy them, do not retype them): see "Templates" at the end.
+The app lives in `mobile/src` and is the source of truth from Phase 1 on: reuse its components, hooks and screens before
+writing new ones. The verified Phase 0 seed is in `assets/` for a fresh scaffold only: see "Templates" at the end.
 
 ## Contents
 - Principles
@@ -41,29 +42,36 @@ mobile/
 └── src/
     ├── app/                   ROUTES ONLY. Nothing else, ever (tests, types and helpers would become routes)
     │   ├── _layout.tsx        providers, fonts + session hydration gate, Stack.Protected
-    │   ├── (auth)/            sign-in, verify (code), password
-    │   ├── (onboarding)/      profile (name, username, avatar)
-    │   └── (app)/
+    │   ├── (auth)/            sign-in (code or password, one screen with a toggle), verify (code)      [built]
+    │   ├── (onboarding)/      profile (name, username, avatar)                                          [built]
+    │   └── (app)/             a Stack today; Phase 2 adds (tabs)
+    │       ├── index.tsx      placeholder Home until Phase 2 (shows the user and a Sign out button)     [built]
+    │       ├── joy.tsx        modal: "things that make me feel good" (onboarding continuation; edit later) [built]
+    │       ├── set-password.tsx    formSheet: quick-login password offer                                 [built]
     │       ├── (tabs)/        index (Home feed), history, streak, me   + custom tab bar with the centre "+"
     │       ├── check-in.tsx   formSheet: post a mood (the centre "+" opens it)
     │       ├── mind-divert.tsx  formSheet: low-mood suggestions from the user's joy list
-    │       ├── joy.tsx        modal: edit "things that make me feel good" (also the onboarding continuation)
     │       ├── group-switcher.tsx  formSheet: pick the active group (only offered with 2+ groups)
     │       ├── group-setup.tsx     create or join a group (also the empty state of Home)
     │       ├── group/[id].tsx      group detail: members, invite code, leave
-    │       ├── edit-profile.tsx    name, username, avatar
-    │       └── set-password.tsx    quick-login password
+    │       └── edit-profile.tsx    name, username, avatar
     ├── screens/               screen bodies, one folder per screen; private pieces live inside it
-    │   └── home/{index.tsx, feed-card.tsx, vibe-summary.tsx, ...}
-    ├── components/            shared UI used by 2+ screens: mood-face, mood-picker, avatar, button, chip, icon...
+    │   ├── sign-in/ verify/ set-password/ profile-setup/ joy-setup/     [built; each has index.tsx + index.test.tsx]
+    │   └── home/{index.tsx, feed-card.tsx, vibe-summary.tsx, ...}       [Phase 2]
+    ├── components/            shared UI used by 2+ screens
+    │   │                      built: app-text, button, text-button, icon-button, text-field, otp-input, chip, screen, icon, mood-face
+    │   └──                    to come: mood-picker, avatar, mood-tab-bar, toast, empty/error state ...
     ├── api/                   the only code that talks HTTP
     │   ├── client.ts errors.ts parse.ts query-client.ts index.ts        (templates)
     │   ├── schemas/           zod per resource, all templates: auth, user, group, mood, nudge, streak
-    │   └── <resource>.ts      request functions only: auth, profile, groups, moods, reactions, nudges, streaks
-    ├── hooks/                 use-groups.ts, use-today-feed.ts, use-post-mood.ts ... (TanStack Query wrappers + key factories)
-    ├── stores/                session-store.ts (template), ui-store.ts (one-shot, non-persisted flags)
-    ├── theme/                 colors, spacing, radius, typography (templates); ONE entry point
-    └── utils/                 env, ist-date, secure-storage(.web) (templates), plus pure helpers
+    │   └── <resource>.ts      request functions only. Built: auth, profile. To come: groups, moods, reactions, nudges, streaks
+    ├── hooks/                 TanStack Query wrappers + key factories. Built: use-auth, use-profile.
+    │                          To come: use-groups, use-today-feed, use-post-mood ...
+    ├── stores/                session-store.ts (template), ui-store.ts (non-persisted: the post-sign-in prompt queue; active group in Phase 2)
+    ├── constants/             product content copied from the web, not retyped: avatars, joy-suggestions (grounding tasks in Phase 2)
+    ├── test-utils/            renderScreen (SafeAreaProvider + QueryClient), createQueryWrapper: shared by tests, never imported by app code
+    ├── theme/                 colors, spacing, radius, typography (templates, extended with roles); ONE entry point
+    └── utils/                 env, ist-date, secure-storage(.web) (templates), error-message, plus pure helpers
 ```
 
 Naming and files:
@@ -111,9 +119,15 @@ navigation; a reload with a stored session goes straight to `(app)`; sign-out re
 
 **Joy onboarding is a continuation, never a gate.** The web app once redirected every returning user into the
 "things you love" screen because it checked `joyOnboarded === false` at login, which hijacked password
-logins. So `joyOnboarded` must not appear in `selectStatus`. Instead the profile screen, after a successful
-first-time save, sets a one-shot flag in `ui-store` (`pendingJoyOnboarding`, not persisted), and the `(app)`
-layout pushes `/joy` when it sees the flag, then clears it. Anyone can reopen `/joy` later from the Me tab.
+logins. So `joyOnboarded` must not appear in `selectStatus`. Instead the first-time profile save
+(`useUpdateProfile({ firstSetup: true })`, only when `!joyOnboarded`) enqueues `'joy'` on a **prompt queue** in
+`ui-store` (`Prompt = 'joy' | 'password'`, not persisted, joy before password), and a code sign-in enqueues
+`'password'` when the account has no password (`useVerifyOtp`). The `(app)` layout opens the next prompt route about
+400 ms after it appears, each prompt screen calls `dismissPrompt` when it unmounts (so the next one follows), and
+`endSession()` clears the queue. A password login enqueues nothing, so a returning user lands on Home. Anyone can reopen
+`/joy` later from the Me tab (Phase 3). Regression tests: `hooks/use-auth.test.tsx` (a password login queues nothing),
+`screens/profile-setup/index.test.tsx` (joy only from first setup, never when already answered), `stores/ui-store.test.ts`
+(order, once each, cleared on sign-out) and the `auth-returning` flow. Reintroducing the hijack was shown to fail them.
 
 **Tabs.** Use JS tabs: `import { Tabs } from 'expo-router/js-tabs'` with a custom `tabBar` prop
 (`import type { BottomTabBarProps } from 'expo-router/js-tabs'`), which is type-checked against SDK 57. Do not
@@ -219,7 +233,8 @@ From Expo's official skills (verified 2026-09-29 in `expo/skills`):
 `borderCurve: 'continuous'` on non-pill rounded corners; `<Text selectable>` for copyable data (invite code);
 `fontVariant: ['tabular-nums']` for counters (streak, index %); `useWindowDimensions` not `Dimensions`; flexbox and
 `gap` over margins; screen titles from the navigator header, not a custom text element; `expo-haptics` on iOS for
-key actions (post mood, reaction); try Expo Go before creating a development build; treat `ios/` and `android/`
+key actions (post mood, reaction); try Expo Go before creating a development build (on a physical iPhone that needs an
+Expo Go matching the SDK: see `testing-and-verification.md`); treat `ios/` and `android/`
 as generated (never edit them; configure through `app.json` and config plugins); use `@expo/ui` for platform
 controls (switch, picker, date picker, menu) rather than a community library, and keep branded surfaces custom.
 Do not wrap platform components that already carry their design language just to route them through the design system.
@@ -247,8 +262,10 @@ Then run the gates in `testing-and-verification.md` and say exactly what ran and
 
 ## Templates
 
-Verified together (type-check, ESLint with Prettier, 37 Jest tests, and the auth-gate and session-resilience
-flows on the web export against the real backend). Copy at scaffold time:
+The seed for a **fresh** scaffold, verified together (type-check, ESLint with Prettier, 37 Jest tests, and the auth-gate
+and session-resilience flows on the web export against the real backend). `mobile/src` has since grown past it (placeholder
+routes replaced, `endSession()` also clears the prompt queue, `theme/typography.ts` and `mergeUser` refined; the last two
+were synced back). Do not copy this over an existing `mobile/`. Copy at scaffold time only:
 
 ```bash
 S=.claude/skills/moodcircle-mobile/assets
