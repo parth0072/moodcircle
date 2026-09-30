@@ -48,17 +48,24 @@ Auth column: `-` public, `T` needs the bearer token.
 | `GET /profile/me` | T | | `{ user }` | 401 |
 | `PATCH /profile` | T | `{ name?, username?, avatar?, joyActivities? }` | `{ user }` | 409 `USERNAME_TAKEN`, 422 |
 | `GET /groups` | T | | `{ groups: Group[] }` | |
-| `POST /groups` | T | `{ name }` (1 to 60 chars) | 201 `{ group }` | 422 |
-| `POST /groups/join` | T | `{ inviteCode }` (case-insensitive) | `{ group }` | 404 `INVALID_INVITE_CODE`, 409 `ALREADY_MEMBER` |
+| `GET /groups/overview` | T | | `{ groups: (Group + { members, today })[] }`: members (`id`, `name`, `username`) and today's posts (`userId`\|null, `emotion`, `createdAt`), newest first; never the words | |
+| `GET /groups/preview?code=` | T | | `{ group: { id\|null, name, color, showNotes, createdByName\|null, memberCount, isMember } }`; `id` only for a member | 404 `INVALID_INVITE_CODE`, 422 |
+| `POST /groups` | T | `{ name }` (1 to 60 chars), `color?` (`blue` `sage` `pink` `peach` `mint`), `showNotes?` | 201 `{ group }` | 422 |
+| `POST /groups/join` | T | `{ inviteCode }` (case-insensitive), `autoShare?` | `{ group }` | 404 `INVALID_INVITE_CODE`, 409 `ALREADY_MEMBER` |
 | `GET /groups/:groupId` | T | | `{ group, members: Member[] }` | 404 `GROUP_NOT_FOUND`, 403 `NOT_MEMBER` |
 | `DELETE /groups/:groupId/leave` | T | | `{ message }` | 404 `GROUP_NOT_FOUND`, 403 `NOT_MEMBER` |
-| `POST /groups/:groupId/moods` | T | `{ level 1..5, note? <=280, privateNote? <=500, isAnonymous? }` | 201 `{ mood: FeedItem }` | 409 `ALREADY_CHECKED_IN`, 404/403, 422 |
+| `POST /groups/:groupId/moods` | T | `{ emotion` (the six) `or level 1..5, note? <=280, privateNote? <=500, isAnonymous? }`. A post that was shared automatically is replaced (200) rather than refused | 201 `{ mood: FeedItem }` | 409 `ALREADY_CHECKED_IN`, 404/403, 422 |
 | `GET /groups/:groupId/moods/today` | T | | `{ feed: FeedItem[], vibeScore, checkedIn, totalMembers }` | 404/403 |
 | `GET /groups/:groupId/moods/history?days=7\|30\|90` | T | | `{ history: FeedItem[], days }` | 422, 404/403 |
 | `POST /moods/:moodId/reactions` | T | `{ type }` | 201 `{ reaction }` | 404 `MOOD_NOT_FOUND`, 403 `NOT_MEMBER`, 409 `DUPLICATE_REACTION`, 422 |
 | `DELETE /moods/:moodId/reactions/:reactionId` | T | | `{ message }` | 404 `REACTION_NOT_FOUND`, 400 `MISMATCH`, 403 `FORBIDDEN` |
 | `POST /groups/:groupId/nudge` | T | `{ targetUserId }` | 201 `{ nudge }` | 400 `SELF_NUDGE`, 403 `NOT_MEMBER`, 404 `GROUP_NOT_FOUND` `TARGET_NOT_MEMBER`, 429 `NUDGE_LIMIT` |
 | `GET /streaks/me` | T | | `{ streak: { currentStreak, lastCheckInDate } }` | |
+| `POST /entries` | T | `{ emotion, intensity 1..5, tags?, note?, date? }` (the person's own day) | 201 `{ entry }` | 422 `INVALID_DATE` |
+| `GET /entries?from=&to=` | T | | `{ entries: Entry[] }` oldest first, at most 366 days | 422 `INVALID_RANGE` |
+| `PATCH /entries/:id` | T | `{ emotion?, intensity?, tags?, note? }` | `{ entry }` | 404 `ENTRY_NOT_FOUND`, 422 |
+| `DELETE /entries/:id` | T | | `{ message }` | 404 `ENTRY_NOT_FOUND` |
+| `GET /entries/stats?date=` | T | | `{ stats: { total, currentStreak, topEmotion\|null, firstEntryDate\|null } }` | 422 |
 | `GET /health` | - | | bare `{ ok: true }` | |
 
 Also present but out of scope for the mobile app for now: `/private/*` (private pairs) and `/premium/*`
@@ -73,11 +80,14 @@ The web UI offers only the first three; keep parity first.
 ```
 User      { id, email?, name|null, username|null, avatar|null, isPremium, hasPassword?, joyActivities: string[], joyOnboarded }
             auth responses include email and hasPassword; /profile responses do not (merge, never replace)
-Group     { id, name, inviteCode (6 hex chars, upper case), createdBy, memberCount, isAdmin, createdAt }
+Group     { id, name, inviteCode (6 hex chars, upper case), createdBy, memberCount, isAdmin, color, showNotes, autoShare, createdAt }
+            showNotes false = "mood only": other people's notes come back as ""; autoShare = the asker shares their daily mood
 Member    { id, name|null, username|null, avatar|null }
-FeedItem  { id, user, isOwn, level 1..5, note, isAnonymous, date, createdAt, reactions: Reaction[] }
+FeedItem  { id, user, isOwn, level 1..5, emotion, note, isAnonymous, date, createdAt, reactions: Reaction[] }
+            emotion is what the post was made with; for a website post (level only) it is the closest one
             user = { anonymous: true }  |  { id?, name|null, username|null, avatar|null }
 Reaction  { id, type, userId, createdAt }          (POST returns it with moodId as well)
+Entry     { id, emotion, intensity 1..5, tags: string[], note, date, createdAt, updatedAt }
 Nudge     { id, fromUserId, toUserId, groupId, date, createdAt }
 ```
 
@@ -85,7 +95,11 @@ Facts about these shapes that are easy to get wrong (all checked by `contract-ch
 - `privateNote` is accepted on POST and never returned, not even to the author.
 - An anonymous post has no author at all (`user: { anonymous: true }`), but `isOwn` is still true for its author.
   It therefore cannot be nudged.
-- `vibeScore` is the mean of today's levels to one decimal, `null` when nobody has checked in.
+- `vibeScore` is the mean of today's levels to one decimal, `null` when nobody has checked in. A post made with an
+  emotion gets a level from it (joy 5, calm 4, meh 3, worry 2, sad 2, anger 1).
+- "Share my check-ins" (`autoShare`): the server keeps a group's post for today in line with the person's latest
+  journal entry of the day (emotion only, never the journal note), following edits and deletes, and never
+  overriding a post the person wrote themselves. The app does nothing for this beyond sending `autoShare` on join.
 - `history` contains the whole group's moods, oldest first; filter on `isOwn` for a personal graph.
 - Saving `joyActivities` (even `[]`) sets `joyOnboarded: true`. At most 12 items (more is a 422); each is trimmed and
   cut to 60 characters, and blanks are dropped.

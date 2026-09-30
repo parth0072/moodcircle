@@ -1,4 +1,5 @@
 import type { Emotion } from '../constants/emotions';
+import type { GroupColor } from '../constants/groups';
 
 // Moodbloom palette, taken from the "Moodbloom – Mood Tracking App" design canvas. Light only for
 // now: there is no dark variant, so app.json sets userInterfaceStyle to "light". When a dark
@@ -27,6 +28,12 @@ export const colors = {
   dashed: '#C9C2AE', // "no entry" day
   switchOff: '#D6D2C6',
   meterOff: '#E6DFCC', // empty bar of the password meter
+  // Groups
+  coral: '#F37A6B', // the unread badge on a group
+  found: '#3F6B24', // "Group found"
+  sandText: '#6B5B3A', // helper lines on the sand-coloured cards
+  notYet: '#EFE8D8', // a member who has not checked in yet (same as track)
+  notYetOnBlue: '#5E73BE', // the same, on the blue group screen
   // Legacy names still used by screens that are being replaced; removed together with them.
   border: '#E9E1D0',
   borderStrong: '#DDD0B4',
@@ -44,6 +51,24 @@ export const emotionColors: Record<Emotion, string> = {
   worry: '#C9E6DA',
   anger: '#F9C77E',
   meh: '#A7C47A',
+};
+
+// The colour a group takes (its tile, and the swatches on the create screen), and the letter's colour
+// on it: white on the blue one, ink on the light ones.
+export const groupColors: Record<GroupColor, string> = {
+  blue: '#3651A8',
+  sage: '#A7C47A',
+  pink: '#F6C6D6',
+  peach: '#F9C77E',
+  mint: '#A9DCC8',
+};
+
+export const groupOnColor: Record<GroupColor, string> = {
+  blue: '#FFFFFF',
+  sage: '#1E2A5A',
+  pink: '#1E2A5A',
+  peach: '#1E2A5A',
+  mint: '#1E2A5A',
 };
 
 export const accents = {

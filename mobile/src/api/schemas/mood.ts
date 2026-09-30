@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { EMOTIONS } from '../../constants/emotions';
+
 export const moodLevelSchema = z.union([
   z.literal(1),
   z.literal(2),
@@ -40,6 +42,8 @@ export const feedItemSchema = z.object({
   user: feedUserSchema,
   isOwn: z.boolean(),
   level: moodLevelSchema,
+  /** What the post shows: the emotion it was made with, or the closest one to a website level. */
+  emotion: z.enum(EMOTIONS),
   note: z.string(),
   isAnonymous: z.boolean(),
   /** YYYY-MM-DD in IST. */
@@ -75,4 +79,6 @@ export const reactionResponse = z.object({
 });
 
 export type FeedItem = z.infer<typeof feedItemSchema>;
+export type TodayFeed = z.infer<typeof todayResponse>;
+export type Reaction = z.infer<typeof feedReactionSchema>;
 export type ReactionType = z.infer<typeof reactionTypeSchema>;

@@ -25,6 +25,7 @@ const QUICK_INTENSITY = 3;
 
 interface HomeScreenProps {
   onOpenProfile: () => void;
+  onOpenGroups: () => void;
   onOpenInsights: () => void;
   /** Opens the Log screen: for an entry to add details to, or (no id) to log a new one there. */
   onOpenLog: (entryId?: string) => void;
@@ -36,7 +37,12 @@ interface Picked {
   entryId: string;
 }
 
-export function HomeScreen({ onOpenProfile, onOpenInsights, onOpenLog }: HomeScreenProps) {
+export function HomeScreen({
+  onOpenProfile,
+  onOpenGroups,
+  onOpenInsights,
+  onOpenLog,
+}: HomeScreenProps) {
   const insets = useSafeAreaInsets();
   const name = useSessionStore((s) => s.user?.name);
   const notice = useUiStore((s) => s.notice);
@@ -88,6 +94,7 @@ export function HomeScreen({ onOpenProfile, onOpenInsights, onOpenLog }: HomeScr
           <AppText variant="button" color="onBrand" style={styles.name} numberOfLines={1}>
             {name}
           </AppText>
+          <RoundButton icon="users" label="Groups" tone="glass" onPress={onOpenGroups} />
           <RoundButton icon="pie" label="Mood insights" tone="glass" onPress={onOpenInsights} />
           <RoundButton
             icon="calendar"

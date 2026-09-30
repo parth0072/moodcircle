@@ -13,7 +13,8 @@ no iPhone. It exists so that every session starts from the same decisions instea
 personal mood tracker, not the web app's groups), all merged into `main` (the API side, `/api/entries`, came in first):
 the `mobile/` Expo app boots, gates three route groups, and has the intro, sign up with an
 emailed code, log in, forgot password, Home (quick check-in), Log a mood, Insights and Profile (reminder, log out).
-Groups and the group feed are not in that design and wait for the user's decision. Nothing has run on an iPhone.
+The canvas later added the group screens (Groups, Create, Join, Group feed, Share to groups), built on
+`feature/mobile-groups` with the server side on `feature/group-invite-emotion-api`. Nothing has run on an iPhone.
 `references/roadmap.md` has the phases, decisions taken and the open decisions.
 
 **`mobile/` is now the source of truth.** `assets/` only seeds a brand-new scaffold; never copy it over an existing
