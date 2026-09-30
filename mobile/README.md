@@ -59,7 +59,7 @@ The GitHub Action **Android APK** (`.github/workflows/android-apk.yml`) builds a
 phone or emulator. You need nothing on your computer.
 
 1. On GitHub open the **Actions** tab, choose **Android APK**, then **Run workflow**. (It also runs by itself when `mobile/`
-   changes on `main`.) A build takes about 10 to 15 minutes.
+   changes on `main`.) A build takes about 20 minutes.
 2. When the run is green, open it and download **moodcircle-android-N** under *Artifacts* at the bottom (a zip with one
    `.apk` inside; downloads need a GitHub login).
 3. Copy the `.apk` to the phone (cable, Drive, email) and open it. If the phone asks, allow installing from that app.
