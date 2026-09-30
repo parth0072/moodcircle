@@ -82,7 +82,7 @@ profile setup, never a gate. Full detail: `references/architecture.md`.
    (`expo-router`, `expo-data-fetching`, `expo-native-ui`, `expo-design-system`) are worth loading; this skill does not depend on it.
 3. **Settle open decisions** that block the slice. Ask the user only for what changes the outcome (name and bundle id,
    hardware, tab bar), and give a recommendation with each question. Otherwise state the default you chose.
-4. **Branch** `feat/mobile-<slice>` from the latest `origin/main`.
+4. **Branch** `feature/mobile-<slice>` (or `bugfix/...`; names follow `CLAUDE.md`) from the latest `origin/main`.
 5. **Build** to `references/architecture.md` and `references/design-system.md`: tokens not literals, four states on every data
    screen, drafts kept on failed saves, `accessibilityLabel` on icon-only controls, no dead buttons.
 6. **Test**: colocated unit tests, plus a `verify-web` flow for UI slices (`mobile/verify/flows/<slice>.mjs`, copy

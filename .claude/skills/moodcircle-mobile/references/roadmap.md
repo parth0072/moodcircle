@@ -17,7 +17,7 @@ needs (`/api/entries`) and the skill itself (PR #7). The canvas is a personal tr
 
 ## Phases
 
-Each phase is one or more small PRs off `main`, branch `feat/mobile-<slice>`, each finishing with the gates in
+Each phase is one or more small PRs off `main`, branch `feature/mobile-<slice>` (naming rule in `CLAUDE.md`), each finishing with the gates in
 `testing-and-verification.md`. Do not start a phase without the previous one merged, and do not mix backend changes into
 an app PR.
 
@@ -87,7 +87,7 @@ scaffold flow all green; `expo-doctor` 19 of 21, the two others need blocked hos
    (it fails if anything renders outside the auth gate). It is only meaningful while the routes are placeholders: it is not
    copied into `mobile/`, and it correctly fails against the built app, which has real screens.
 8. Update the "Status" lines at the top of `SKILL.md` and this file. Commit in small logical commits, push
-   `feat/mobile-scaffold`. Open a PR only when asked.
+   `feature/mobile-scaffold`. Open a PR only when asked.
 
 Also in Phase 0 (recommended, ask first): `.github/workflows/mobile.yml` running `npm ci`, `scripts/typegen.mjs`, `tsc`,
 `expo lint`, `jest` on pull requests that touch `mobile/`. The repo has no CI today.
