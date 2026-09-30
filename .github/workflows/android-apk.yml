@@ -1,7 +1,8 @@
 # Builds an APK you can install on an Android phone or emulator, on GitHub's own machines.
 #
-# Release: push a version tag on a commit of main (git tag v1.0.0 && git push origin v1.0.0). The APK is
-# built and put on the Releases page as moodcircle.apk, where anyone can download it without a login:
+# Release: push a version tag on a commit of main (git tag 1.1 && git push origin 1.1; a leading v is fine
+# too), or make the release on GitHub, which makes the tag. The APK is built and put on that release as
+# moodcircle.apk, where anyone can download it without a login:
 # <repository>/releases/latest/download/moodcircle.apk (see mobile/README.md).
 #
 # Try-out build: Actions tab -> "Android APK" -> Run workflow (any branch, optionally another server).
@@ -23,6 +24,7 @@ on:
         default: ''
   push:
     tags:
+      - '[0-9]*'
       - 'v[0-9]*'
 
 # A newer build of the same branch or tag makes an older one that is still running pointless.
@@ -47,15 +49,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # A release takes its version name from the tag (v1.2.0 becomes 1.2.0): stop early on a tag that is
-      # not a version. Passed through the environment, never pasted into the script.
+      # A release takes its version name from the tag (1.2.0 and v1.2.0 both give 1.2.0): stop early on a tag
+      # that is not a version. Passed through the environment, never pasted into the script.
       - name: Check the tag is a version
         if: ${{ github.ref_type == 'tag' }}
         env:
           TAG: ${{ github.ref_name }}
         run: |
-          if ! [[ "$TAG" =~ ^v[0-9]+(\.[0-9]+)*([-+][0-9A-Za-z.-]+)?$ ]]; then
-            echo "::error::The tag $TAG is not a version like v1.2.3"
+          if ! [[ "$TAG" =~ ^v?[0-9]+(\.[0-9]+)*([-+][0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::The tag $TAG is not a version like 1.2.3"
             exit 1
           fi
 
@@ -88,7 +90,7 @@ jobs:
         run: npx expo prebuild --platform android --no-install
 
       # Every build gets a higher version number, so a newer APK installs over an older one.
-      # A tag also sets the version name that Android shows: v1.2.0 becomes 1.2.0.
+      # A tag also sets the version name that Android shows: 1.2.0 and v1.2.0 both give 1.2.0.
       - name: Number the build
         env:
           TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
@@ -154,8 +156,8 @@ jobs:
           name: moodcircle-android-${{ github.run_number }}
 
       # releases/latest/download/moodcircle.apk always gives the APK of the newest release, and the older
-      # releases stay on the Releases page. A release that already exists (made by hand on GitHub, or the
-      # tag was pushed again) keeps its title and notes: only the file is replaced.
+      # releases stay on the Releases page. A release that already exists (made on GitHub, which makes the
+      # tag too, or the tag was pushed again) keeps its title and notes: only the file is added or replaced.
       - name: Publish the release
         run: |
           mv "moodcircle-$BUILD.apk" moodcircle.apk
