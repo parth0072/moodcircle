@@ -114,6 +114,7 @@ test('a code can be previewed without joining', async () => {
   const seen = await call('GET', `/groups/preview?code=${group.inviteCode.toLowerCase()}`, { token: bob });
   assert.equal(seen.status, 200);
   assert.deepEqual(seen.json.data.group, {
+    id: null, // a stranger does not get the id
     name: 'Sunday Circle',
     color: 'pink',
     showNotes: false,
@@ -125,6 +126,7 @@ test('a code can be previewed without joining', async () => {
 
   const own = await call('GET', `/groups/preview?code=${group.inviteCode}`, { token: alice });
   assert.equal(own.json.data.group.isMember, true);
+  assert.equal(own.json.data.group.id, group.id, 'a member gets the id, to open the group');
 });
 
 test('a preview says so for a wrong code, no code, or no sign-in', async () => {

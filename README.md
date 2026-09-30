@@ -94,9 +94,9 @@ All group routes require `Authorization: Bearer <token>`.
 { "inviteCode": "A3F9C1", "autoShare": true }
 ```
 
-**Response — preview** (`createdByName` is `null` when the creator has no name)
+**Response — preview** (`createdByName` is `null` when the creator has no name; `id` is `null` unless you are already a member)
 ```json
-{ "group": { "name": "Close Friends", "color": "sage", "showNotes": false, "createdByName": "Kabir", "memberCount": 6, "isMember": false } }
+{ "group": { "id": null, "name": "Close Friends", "color": "sage", "showNotes": false, "createdByName": "Kabir", "memberCount": 6, "isMember": false } }
 ```
 
 Every group in a response also carries `color`, `showNotes` and `autoShare` (for the person asking).

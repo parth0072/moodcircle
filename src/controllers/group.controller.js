@@ -56,14 +56,16 @@ function previewGroup(req, res) {
   if (!group) return fail(res, 'Invalid invite code', 'INVALID_INVITE_CODE', 404);
 
   const creator = users.get(group.createdBy);
+  const isMember = group.members.includes(req.user.id);
   return ok(res, {
     group: {
+      id: isMember ? group.id : null, // only members get the id: a stranger learns what the code opens, nothing more
       name: group.name,
       color: group.color || 'blue',
       showNotes: group.showNotes !== false,
       createdByName: creator?.name || creator?.username || null,
       memberCount: group.members.length,
-      isMember: group.members.includes(req.user.id),
+      isMember,
     },
   });
 }
