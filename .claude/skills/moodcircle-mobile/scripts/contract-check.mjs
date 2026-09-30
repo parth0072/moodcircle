@@ -40,7 +40,7 @@ register('./lib/ts-resolve-hooks.mjs', import.meta.url);
 const schemaDir = resolve(args.schemas ?? join(args.project, 'src/api/schemas'));
 const load = (name) => import(pathToFileURL(join(schemaDir, `${name}.ts`)).href);
 const S = {};
-for (const name of ['auth', 'group', 'mood', 'nudge', 'streak']) {
+for (const name of ['auth', 'group', 'mood', 'nudge', 'streak', 'entry']) {
   try {
     Object.assign(S, await load(name));
   } catch (e) {
@@ -131,6 +131,46 @@ try {
   check(hist?.history.length === 2 && hist.days === 7, 'history covers the whole group, not just the caller');
   await failsWith(request('GET', `/groups/${g.id}/moods/history?days=5`, undefined, A.token), 422, 'VALIDATION_ERROR', 'days must be 7, 30 or 90');
   parses(S.messageResponse, await request('DELETE', `/moods/${postA.mood.id}/reactions/${rxn.reaction.id}`, undefined, B.token), 'DELETE .../reactions/:id');
+
+  // ── the Moodbloom group screens: colour, mood-only, preview, overview, emotions, auto-share ──
+  const quiet = parses(S.groupResponse, await request('POST', '/groups', { name: 'Quiet circle', color: 'mint', showNotes: false }, A.token), 'POST /groups (colour and mood only)')?.group;
+  check(quiet?.color === 'mint' && quiet.showNotes === false && quiet.autoShare === false, 'a group keeps its colour and its mood-only setting');
+  check(created.group.color === 'blue' && created.group.showNotes === true, 'a group made without them is blue and shows notes');
+  await failsWith(request('POST', '/groups', { name: 'X', color: 'red' }, A.token), 422, 'VALIDATION_ERROR', 'unknown group colour');
+
+  const C = await api.signIn(api.uniqueEmail('cara'));
+  await request('PATCH', '/profile', { name: 'Cara' }, C.token);
+  const looked = parses(S.previewResponse, await request('GET', `/groups/preview?code=${quiet.inviteCode.toLowerCase()}`, undefined, C.token), 'GET /groups/preview (lower-case code)')?.group;
+  check(looked?.name === 'Quiet circle' && looked.isMember === false && looked.id === null && looked.memberCount === 1, 'a stranger sees what a code opens, but not the group id');
+  await failsWith(request('GET', '/groups/preview?code=ZZZZZZ', undefined, C.token), 404, 'INVALID_INVITE_CODE', 'previewing a bad code');
+  const seesOwn = parses(S.previewResponse, await request('GET', `/groups/preview?code=${quiet.inviteCode}`, undefined, A.token), 'GET /groups/preview (a member)')?.group;
+  check(seesOwn?.isMember === true && seesOwn.id === quiet.id, 'a member gets the group id back, to open it');
+
+  const inQuiet = parses(S.groupResponse, await request('POST', '/groups/join', { inviteCode: quiet.inviteCode, autoShare: true }, C.token), 'POST /groups/join (autoShare)')?.group;
+  check(inQuiet?.autoShare === true, 'joining can switch sharing on');
+  const emotional = parses(S.postMoodResponse, await request('POST', `/groups/${quiet.id}/moods`, { emotion: 'anger', note: 'my own words' }, A.token), 'POST .../moods (emotion)')?.mood;
+  check(emotional?.emotion === 'anger' && emotional.level === 1, 'an emotion post keeps a level, for the vibe score');
+  await failsWith(request('POST', `/groups/${quiet.id}/moods`, { note: 'no mood' }, B.token), 422, 'VALIDATION_ERROR', 'a post needs an emotion or a level');
+
+  const entry = parses(S.entryResponse, await request('POST', '/entries', { emotion: 'joy', intensity: 3, note: 'private journal words' }, C.token), 'POST /entries (shared automatically)')?.entry;
+  const quietFeed = parses(S.todayResponse, await request('GET', `/groups/${quiet.id}/moods/today`, undefined, C.token), 'GET .../moods/today (mood-only group)');
+  const shared = quietFeed?.feed.find((f) => f.isOwn);
+  check(shared?.emotion === 'joy' && shared.note === '', "the day's journal mood was shared, without the journal note");
+  check(quietFeed?.feed.find((f) => !f.isOwn)?.note === '', "a mood-only group leaves out other people's notes");
+  check(quietFeed?.feed.length === 2, 'the group feed has the post and the shared mood');
+  // the journal endpoints the app uses, on the same entry
+  parses(S.entriesResponse, await request('GET', `/entries?from=${entry.date}&to=${entry.date}`, undefined, C.token), 'GET /entries');
+  const edited = parses(S.entryResponse, await request('PATCH', `/entries/${entry.id}`, { emotion: 'calm', intensity: 5 }, C.token), 'PATCH /entries/:id')?.entry;
+  check(edited?.emotion === 'calm' && edited.intensity === 5, 'an entry can be edited');
+  check((await request('GET', `/groups/${quiet.id}/moods/today`, undefined, C.token)).feed.find((f) => f.isOwn)?.emotion === 'calm', 'the shared mood follows the edit');
+  const stats = parses(S.entryStatsResponse, await request('GET', `/entries/stats?date=${entry.date}`, undefined, C.token), 'GET /entries/stats')?.stats;
+  check(stats?.total === 1 && stats.currentStreak === 1 && stats.topEmotion === 'calm', 'stats count the entry and its day');
+  parses(S.deleteEntryResponse, await request('DELETE', `/entries/${entry.id}`, undefined, C.token), 'DELETE /entries/:id');
+  check((await request('GET', `/groups/${quiet.id}/moods/today`, undefined, C.token)).feed.length === 1, 'deleting the journal entry takes the shared mood back');
+
+  const overview = parses(S.overviewResponse, await request('GET', '/groups/overview', undefined, A.token), 'GET /groups/overview')?.groups;
+  const quietOverview = overview?.find((x) => x.id === quiet.id);
+  check(overview?.length === 2 && quietOverview?.members.length === 2 && quietOverview.today.length === 1, 'the overview lists each group with its members and the posts of today');
 
   // ── nudges ──
   parses(S.nudgeResponse, await request('POST', `/groups/${g.id}/nudge`, { targetUserId: A.user.id }, B.token), 'POST .../nudge');

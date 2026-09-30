@@ -64,11 +64,19 @@ The screens follow the **Moodbloom** design canvas (Claude Design, "Moodbloom â€
 - **Log a mood:** emotion, how strong, tags and a note; also opens an existing entry to add details.
 - **Insights:** Week or Month, bubbles sized by how often each emotion showed up, the last seven days, and a balance score.
 - **Profile:** your totals (streak, check-ins, top mood), the daily 8:30 pm reminder, edit name, Log out.
+- **Groups** (the people button on Home): "Your circles" lists your groups, who is in each, how they feel today and a
+  badge for new posts. *Start a group* (name, colour, what members can see) and its invite opens in the share sheet.
+  *Join with code* shows whose group it is first ("Group found") and lets you choose whether your daily mood is shared
+  with it automatically. Inside a group you see how everyone feels right now and today's posts, can send a hug, and can
+  share your own mood, with a few words, to one or several groups.
 
-Entries are stored on the server (personal entries API, `/api/entries`), so the live server must be deployed from the latest
-`main`; `bash run-mobile.sh --local` starts a test server that already has it. Left out on purpose: the
-design's soundscapes and music player, Apple/Google sign-in (the server has neither), dark mode. None of it has been run on
-a real iPhone yet.
+Entries and groups are stored on the server (`/api/entries` and the group routes), so the live server must be deployed
+from the latest `main`; `bash run-mobile.sh --local` starts a test server that already has them. Left out on purpose:
+the design's soundscapes and music player, Apple/Google sign-in (the server has neither), dark mode, replying to a post,
+approving new members (joining with a code is instant), and leaving a group. None of it has been run on a real iPhone yet.
+
+Group posts made on the website have five levels, not six emotions: in the app they show as the closest emotion
+(Great as Joy, Good as Calm, Okay as Meh, Low as Worry, Rough as Sad).
 
 ## Checks
 
@@ -83,6 +91,7 @@ iOS renderer):
 
 ```bash
 node ../.claude/skills/moodcircle-mobile/scripts/verify-web.mjs --project . --flow verify/flows/auth.mjs
+node ../.claude/skills/moodcircle-mobile/scripts/verify-web.mjs --project . --flow verify/flows/groups.mjs
 ```
 
 ## Notes

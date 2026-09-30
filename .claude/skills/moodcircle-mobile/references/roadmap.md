@@ -2,8 +2,10 @@
 
 Status on 2026-09-30: **Phases 0 and 1 are built, then the app was rebuilt from the Moodbloom design canvas** (account
 screens, Home, Log a mood, Insights, Profile). All of it is merged into `main`, together with the personal entries API it
-needs (`/api/entries`) and the skill itself (PR #7). The canvas is a personal tracker with no groups, so Phase 2 below
-(groups and feed) starts only when the user says go. Nothing has run on an iPhone.
+needs (`/api/entries`) and the skill itself (PR #7). The canvas later gained the group screens (Groups, Create group,
+Join group, Group feed, Share to groups); they are built on `feature/mobile-groups` with their API changes on
+`feature/group-invite-emotion-api`. The rest of Phase 2 below (nudges, streak pill, history, reactions beyond the hug)
+is not in the canvas. Nothing has run on an iPhone.
 
 ## Contents
 - Phases
@@ -25,8 +27,9 @@ an app PR.
 |---|---|---|
 | 0 Scaffold **(built)** | An empty app that builds, lints, tests, exports, and gates three placeholder groups | Expo project in `mobile/`, templates copied, gates green. The CI workflow is still open (recommended, ask first) |
 | 1 Sign in **(built)** | A user can sign in, set up a profile, and stay signed in | sign-in (code and password on one screen), verify, quick-login password sheet, profile setup, joy setup; flows `auth` and `auth-returning`; a placeholder Home with Sign out. Still to do from the original list: joy **edit** and profile edit (they live on the Me tab, Phase 3) and the `session-resilience` flow (it needs an authenticated screen, so it lands with the Home feed in Phase 2) |
-| 1b Moodbloom canvas **(built)** | The personal mood tracker from the design canvas | account screens redone to the canvas; Home (one-tap check-in, today's list), Log a mood (strength, tags, note, edit an entry), Insights (week or month, bubbles, week dots, balance score), Profile (totals, daily reminder, edit name, Log out); entries on the server (`/api/entries`). Left out: soundscapes and music player, Apple/Google sign-in, dark mode, privacy and passcode, export, help. Not built or run: flows for the new screens (`auth` only needed its Home marker), `contract-check` for `/entries` |
-| 2 Groups and feed | The daily loop works | group setup (create, join), group switcher, Home feed (vibe row, member dots, streak pill, mood cards), check-in sheet, reactions, nudge, mind-divert |
+| 1b Moodbloom canvas **(built)** | The personal mood tracker from the design canvas | account screens redone to the canvas; Home (one-tap check-in, today's list), Log a mood (strength, tags, note, edit an entry), Insights (week or month, bubbles, week dots, balance score), Profile (totals, daily reminder, edit name, Log out); entries on the server (`/api/entries`). Left out: soundscapes and music player, Apple/Google sign-in, dark mode, privacy and passcode, export, help. Flows: `auth` (its Home marker updated); `groups` covers the group screens. `contract-check` covers `/entries` too |
+| 1c Groups **(built, on branches)** | The design's group screens work end to end | Home's Groups button; "Your circles" (cards with members, mood bar, new-post badge); Create group (name, colour, mood only or mood + notes, then the invite is shared); Join group (code preview "Group found", "Share my check-ins here", join); Group feed ("Right now" row, today's posts, hugs, invite people); Share to groups (one mood and a few words to several groups). Server: preview, overview, colour, mood-only, emotion posts, auto-share. Left out: Reply, join approval ("You approve new members"), showing the invite code before the group exists, leaving a group, a badge on the Profile button. Flow `groups`; `contract-check` 84 checks |
+| 2 Groups and feed | The rest of the daily loop | group setup (create, join), group switcher, Home feed (vibe row, member dots, streak pill, mood cards), check-in sheet, reactions, nudge, mind-divert |
 | 3 Insight | The rest of the tabs | History (7/30/90 days, chart, stats, share), Streak (real 28-day calendar), Me (edit profile, joy list, invite code, sign out, set password) |
 | 4 Ship | TestFlight, then the store | `eas.json`, icon and splash, push for nudges, daily local reminder, crash reporting, privacy policy, account deletion, report and block, TestFlight build |
 | Later | | home-screen widget (needs a Swift extension and a development build), dark mode, offline cache, Apple In-App Purchase for premium, Android release, iPad layout |
