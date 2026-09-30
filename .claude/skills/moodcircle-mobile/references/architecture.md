@@ -233,7 +233,8 @@ From Expo's official skills (verified 2026-09-29 in `expo/skills`):
 `borderCurve: 'continuous'` on non-pill rounded corners; `<Text selectable>` for copyable data (invite code);
 `fontVariant: ['tabular-nums']` for counters (streak, index %); `useWindowDimensions` not `Dimensions`; flexbox and
 `gap` over margins; screen titles from the navigator header, not a custom text element; `expo-haptics` on iOS for
-key actions (post mood, reaction); try Expo Go before creating a development build; treat `ios/` and `android/`
+key actions (post mood, reaction); try Expo Go before creating a development build (on a physical iPhone that needs an
+Expo Go matching the SDK: see `testing-and-verification.md`); treat `ios/` and `android/`
 as generated (never edit them; configure through `app.json` and config plugins); use `@expo/ui` for platform
 controls (switch, picker, date picker, menu) rather than a community library, and keep branded surfaces custom.
 Do not wrap platform components that already carry their design language just to route them through the design system.

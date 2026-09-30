@@ -141,11 +141,21 @@ mutation in the PR when it is the only thing guarding a bug.
 
 ## What the user must verify on a device
 
-Say plainly that the slice was not run on iOS and hand over the exact steps. To run on an iPhone without a Mac: install
-Expo Go from the App Store, run `npx expo start` on the computer, scan the QR code. `EXPO_PUBLIC_API_URL` must be an address
-the phone can reach: the computer's LAN IP (`http://192.168.x.x:3000/api`) or the deployed HTTPS URL, never `localhost`,
-which is the phone itself. Anything with native code outside Expo Go (widgets, some notification features) needs a
-development build: `eas build --profile development --platform ios`.
+Say plainly that the slice was not run on iOS and hand over the exact steps. A phone cannot run our code by itself: a
+computer runs `npx expo start` and the phone needs an Expo Go build that matches the project's SDK. **Check this first, it
+changed after the skill was written:** Expo's docs (`troubleshooting/expo-go-version-mismatch.mdx`, read 2026-09-30) say the
+App Store build of Expo Go stops at SDK 54 and SDK 55 and later are not published there. A changelog note found through
+search hints an SDK 57 build may since have been approved; that is unconfirmed. So the first launch decides:
+"Project is incompatible with this version of Expo Go" means the store build is too old, and the options are
+`npx eas-cli@latest go` (Expo Go in the user's own TestFlight; paid Apple Developer Program), `sign.expo.dev` (Expo's page for
+installing a matching Expo Go with an Apple ID; not tried here), the iOS Simulator on a Mac (`npx expo start`, then `i`), or
+moving the project to SDK 54, which is a re-verification and an older SDK. On a physical iPhone, SDK 57 also requires Expo CLI
+and Expo Go to be signed in to the same free Expo account (`npx expo login`, then the account icon in Expo Go).
+
+`EXPO_PUBLIC_API_URL` must be an address the phone can reach: the computer's LAN IP (`http://192.168.x.x:3000/api`) or the
+deployed HTTPS URL, never `localhost`, which is the phone itself; opening `<url>/health` in the phone's Safari must show
+`{"ok":true}`. Anything with native code outside Expo Go (widgets, some notification features) needs a development build:
+`eas build --profile development --platform ios`.
 
 Checklist to give the user for each UI slice: notch and home-indicator spacing, keyboard covering inputs, sheet drag and
 dismiss, tab bar with the centre "+", pull to refresh, haptics, text at the largest system size, sign in, kill the app and
@@ -181,6 +191,8 @@ Report in this shape, and never claim more:
 | `mergeUser({ name: undefined })` erased the stored name | fixed in `session-store.ts` (undefined fields are ignored, `null` still clears); keep the two tests that pin it |
 | A flow asserts on the joy screen and passes or fails by luck | the prompt opens 400 ms after Home appears: wait for the password offer first, then assert |
 | Amber focus ring around a text input in the web export | browser default outline: `outlineWidth: 0` on the input (already in `TextField` and `OtpInput`) |
+| Expo Go on an iPhone: "Project is incompatible with this version of Expo Go" | the App Store build is older than the project's SDK (Expo's docs: it stops at SDK 54): see "What the user must verify on a device" |
+| Expo Go on an iPhone: "You need to be signed in to Expo Go and Expo CLI" | SDK 57 needs the same Expo account on both: `npx expo login`, the account icon in Expo Go, then Try Again (the terminal shows no warning) |
 | Web flow shows the Home tab for `/probe` | the template's tab layout only registers its own routes; our root is a `Stack` |
 | `expo export` static output needs a file per route | use `web.output: "single"` (SPA) |
 | A web flow "fails" on an intentional 401/503 | the harness counts console errors; declare them with `allow(/.../)` |

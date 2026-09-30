@@ -166,8 +166,10 @@ Ask these before the phase that needs them; each has a recommendation so the use
 
 1. **Tab bar.** Custom JS tab bar with the centre "+" (matches the reference the user chose; recommended) versus native tabs
    with a Check in button on Home (more iOS-native, cannot draw a centre button). Cheap to switch later (`architecture.md`).
-2. **Hardware and accounts.** Do they have a Mac and an Apple Developer Program membership (paid, yearly)? Without a Mac
-   everything still works through Expo Go and EAS cloud builds; TestFlight needs the membership. Android in scope?
+2. **Hardware and accounts.** Do they have a Mac and an Apple Developer Program membership (paid, yearly)? SDK 57 in Expo Go
+   on a physical iPhone needs a matching Expo Go build, which Expo's docs say the App Store does not carry
+   (`testing-and-verification.md`): the options are `eas go` (membership), `sign.expo.dev`, a Mac simulator, or moving to
+   SDK 54. TestFlight and the store need the membership anyway. Android in scope?
 3. **App name and iOS bundle identifier.** For example `com.<their domain>.moodcircle`. Phases 0 and 1 went ahead with the
    name `MoodCircle` and the placeholder `com.example.moodcircle`; the real id blocks the first EAS build.
 4. **Production API URL.** Must be HTTPS (iOS blocks plain HTTP by default). Is the cPanel deployment reachable over HTTPS, and
