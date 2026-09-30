@@ -63,13 +63,24 @@ repository), then open the downloaded file. If the phone asks, allow installs fr
 
 https://github.com/parth0072/moodcircle/releases/latest/download/moodcircle.apk
 
-It always gives the newest build from `main`; the [Releases page](https://github.com/parth0072/moodcircle/releases) keeps
-the older ones. Every build has a higher version number, so a newer APK installs over an older one.
+It always gives the APK of the newest release; the [Releases page](https://github.com/parth0072/moodcircle/releases) keeps
+the older ones.
 
-A change to `mobile/` on `main` builds and publishes a new one by itself (about 20 minutes). To make one by hand, open the
-**Actions** tab on GitHub, choose **Android APK**, then **Run workflow**. A build from another branch, or for another
-server, is not published: open the run and download **moodcircle-android-N** under *Artifacts* at the bottom (a zip with
-one `.apk` inside; that download needs a GitHub login).
+**To publish a new release**, tag a commit on `main` with a version and push the tag:
+
+```bash
+git checkout main && git pull
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+About 20 minutes later the release appears on the Releases page with `moodcircle.apk` (drafting a release on GitHub, which
+makes the tag, works too). The tag becomes the version Android shows (`v1.0.0` is 1.0.0), and every build has a higher
+version number, so a newer APK installs over an older one. For the next release tag the next version, such as `v1.0.1`.
+
+To try a build without releasing it (another branch, or another server), open the **Actions** tab on GitHub, choose
+**Android APK**, then **Run workflow**. Open the run and download **moodcircle-android-N** under *Artifacts* at the bottom
+(a zip with one `.apk` inside; that download needs a GitHub login).
 
 The app talks to the server in `mobile/.env.production` (the live server). To try another server, type its address into
 *Run workflow* (for example `https://your-domain/moodcircle/api`; it must be `https`, because Android blocks plain `http`).
