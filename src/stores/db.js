@@ -45,4 +45,4 @@ class PersistentMap {
   [Symbol.iterator]() { return this.entries()[Symbol.iterator](); }
 }
 
-module.exports = { PersistentMap };
+module.exports = { PersistentMap, db };

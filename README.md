@@ -11,6 +11,7 @@ cp .env.example .env      # fill in JWT_SECRET and RAZORPAY_KEY_SECRET
 npm install
 npm run dev               # nodemon, hot-reload
 npm start                 # production
+npm test                  # personal-entries API tests (starts its own server and database)
 ```
 
 The server starts on `http://localhost:3000`.  
@@ -175,6 +176,57 @@ All group routes require `Authorization: Bearer <token>`.
 
 ---
 
+### Personal Entries *(the Moodbloom journal)*
+
+A private mood journal, separate from group moods: an emotion, how strong it was, optional tags and a note. Only the
+owner can see, change or delete an entry. All routes require `Authorization: Bearer <token>`.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/entries` | Log an entry (as many per day as you like) |
+| GET | `/api/entries?from=YYYY-MM-DD&to=YYYY-MM-DD` | Your entries in a range of days, oldest first (at most 366 days) |
+| PATCH | `/api/entries/:id` | Change `emotion`, `intensity`, `tags` or `note` (the day never changes) |
+| DELETE | `/api/entries/:id` | Delete an entry |
+| GET | `/api/entries/stats?date=YYYY-MM-DD` | Totals for the profile: check-ins, streak, top emotion, first day |
+
+**Request — log an entry**
+```json
+{
+  "emotion": "joy",
+  "intensity": 4,
+  "tags": ["Friends", "Music"],
+  "note": "Coffee with Sam",
+  "date": "2026-09-30"
+}
+```
+
+- `emotion`: `joy`, `calm`, `sad`, `worry`, `anger` or `meh`. `intensity`: 1–5. `tags`: up to 8, each 1–20 characters
+  (trimmed, duplicates ignoring case removed). `note`: up to 500 characters.
+- `date` is the user's own local day. The server has no time zone for a user, so the app sends it. It is optional (default:
+  today in IST) and must be within a day of UTC, so only "today" can be logged. Wrong values return `INVALID_DATE`.
+- Errors: `VALIDATION_ERROR` (422, first message only), `INVALID_DATE` and `INVALID_RANGE` (422), `ENTRY_NOT_FOUND` (404, also
+  for another user's entry).
+
+**Response — entry**
+```json
+{
+  "entry": {
+    "id": "…", "emotion": "joy", "intensity": 4, "tags": ["Friends", "Music"], "note": "Coffee with Sam",
+    "date": "2026-09-30", "createdAt": "2026-09-30T15:12:00.000Z", "updatedAt": "2026-09-30T15:12:00.000Z"
+  }
+}
+```
+
+**Response — stats**
+```json
+{ "stats": { "total": 148, "currentStreak": 12, "topEmotion": "calm", "firstEntryDate": "2026-03-04" } }
+```
+
+> The streak counts consecutive days with an entry, up to 400 days back. It is still alive when today has no entry yet but
+> yesterday does. It is separate from the group streak above. Deleting a user account must also delete their entries.
+
+---
+
 ### Private Mode *(Premium only)*
 
 These routes return `403` for non-premium users.
@@ -221,11 +273,14 @@ These routes return `403` for non-premium users.
 src/
 ├── app.js                   # Express app + route mounting
 ├── stores/
-│   └── index.js             # In-memory data stores (swap with DB later)
+│   ├── index.js             # In-memory data stores (swap with DB later)
+│   └── entries.js           # Personal entries: a real SQLite table with an index
 ├── utils/
 │   ├── response.js          # ok() / fail() helpers
 │   ├── otp.js               # OTP generation + dispatch
 │   ├── timezone.js          # IST date helpers
+│   ├── dates.js             # Calendar-day helpers for personal entries
+│   ├── entry-stats.js       # Streak for personal entries
 │   └── streak.js            # Streak update + read logic
 ├── middleware/
 │   ├── auth.middleware.js   # JWT verification
@@ -239,7 +294,8 @@ src/
 │   ├── nudge.controller.js
 │   ├── streak.controller.js
 │   ├── private.controller.js
-│   └── premium.controller.js
+│   ├── premium.controller.js
+│   └── entry.controller.js
 └── routes/
     ├── auth.routes.js
     ├── group.routes.js
@@ -248,7 +304,9 @@ src/
     ├── nudge.routes.js
     ├── streak.routes.js
     ├── private.routes.js
-    └── premium.routes.js
+    ├── premium.routes.js
+    └── entry.routes.js
+test/                        # npm test (Node's built-in test runner, real server, throwaway database)
 public/
 └── index.html               # Frontend SPA
 ```
