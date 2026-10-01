@@ -34,6 +34,10 @@ export default function AppLayout() {
       <Stack.Screen name="join-group" />
       <Stack.Screen name="group/[id]" />
       <Stack.Screen name="share-mood" options={{ presentation: 'fullScreenModal' }} />
+      <Stack.Screen name="journal" />
+      <Stack.Screen name="entry/[id]" />
+      <Stack.Screen name="write-entry" options={{ presentation: 'fullScreenModal' }} />
+      <Stack.Screen name="share-entry/[id]" />
       <Stack.Screen
         name="set-password"
         options={{
