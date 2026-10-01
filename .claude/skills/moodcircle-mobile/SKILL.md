@@ -9,12 +9,14 @@ The web app (`public/`, backend in `src/`) is finished and deployed. This skill 
 one standard architecture, one pinned stack, code that is already proven, and a way to verify work in a container that has
 no iPhone. It exists so that every session starts from the same decisions instead of re-deriving them.
 
-**Status (2026-09-30): Phases 0 and 1 are built, and the app was then rebuilt from the Moodbloom design canvas** (a
+**Status (2026-10-01): Phases 0 and 1 are built, and the app was then rebuilt from the Moodbloom design canvas** (a
 personal mood tracker, not the web app's groups), all merged into `main` (the API side, `/api/entries`, came in first):
 the `mobile/` Expo app boots, gates three route groups, and has the intro, sign up with an
 emailed code, log in, forgot password, Home (quick check-in), Log a mood, Insights and Profile (reminder, log out).
 The canvas later added the group screens (Groups, Create, Join, Group feed, Share to groups), built on
-`feature/mobile-groups` with the server side on `feature/group-invite-emotion-api`. Nothing has run on an iPhone.
+`feature/mobile-groups` with the server side on `feature/group-invite-emotion-api`. It then added the Journal (notes,
+memories and photos: the list, writing one, an entry's own page, sharing it with friends from your groups), built on
+`feature/mobile-journal` with the server side on `feature/journal-entries-photos-api`. Nothing has run on an iPhone.
 `references/roadmap.md` has the phases, decisions taken and the open decisions.
 
 **`mobile/` is now the source of truth.** `assets/` only seeds a brand-new scaffold; never copy it over an existing
@@ -100,7 +102,7 @@ node $S/typegen.mjs . [--force]              # fresh checkout: expo-env.d.ts and
 npx tsc --noEmit
 EXPO_OFFLINE=1 CI=1 npx expo lint            # add --fix for Prettier
 npx jest
-node $S/contract-check.mjs --project .       # after API, schema or backend changes (55 checks, real backend)
+node $S/contract-check.mjs --project .       # after API, schema or backend changes (112 checks, real backend)
 node $S/verify-web.mjs --project . --flow verify/flows/<slice>.mjs    # web export in headless Chromium, phone size
 npx expo install --check                     # after dependency changes; `npx expo-doctor` (2 of 21 checks need blocked hosts)
 ```
@@ -112,7 +114,7 @@ npx expo install --check                     # after dependency changes; `npx ex
 | Path | What it is |
 |---|---|
 | `mobile/src/` | the app: source of truth from Phase 1 on (API client and auth hooks, stores, theme, shared components, sign-in and onboarding screens, routes) |
-| `mobile/verify/flows/` | the app's own web-export flows (`auth`, `auth-returning`); each slice adds one |
+| `mobile/verify/flows/` | the app's own web-export flows (`auth`, `auth-returning`, `groups`, `journal`); each slice adds one |
 | `assets/src/`, `assets/config/` | seed for a **fresh** scaffold only: API client and schemas, session store, gate, tokens, `Icon`, `MoodFace`, utils, lint/format/tsconfig. Same code that Phase 0 started from, with its tests |
 | `scripts/typegen.mjs` | generates the git-ignored files `tsc` needs |
 | `scripts/verify-web.mjs` + `flows/` | throwaway backend, web export, same-origin proxy, Playwright; flow templates `smoke`, `scaffold-check` (Phase 0 only), `auth-gate.example`, `session-resilience.example` |

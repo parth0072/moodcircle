@@ -128,7 +128,7 @@ at 390x844. What it does not prove: anything iOS-specific (see the table above).
 node $S/contract-check.mjs --project .
 ```
 
-55 checks (at the time of writing) over every endpoint the app uses: each response is parsed with the zod schemas in `src/api/schemas`, and each
+112 checks (at the time of writing) over every endpoint the app uses: each response is parsed with the zod schemas in `src/api/schemas`, and each
 error code in `api-contract.md` is provoked. Run it when the backend changes, when a schema changes, and before trusting
 `api-contract.md`. It re-runs itself with the Node flags it needs, so Node 22.13 or newer works.
 

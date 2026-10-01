@@ -107,10 +107,20 @@ The screens follow the **Moodbloom** design canvas (Claude Design, "Moodbloom â€
   with it automatically. Inside a group you see how everyone feels right now and today's posts, can send a hug, and can
   share your own mood, with a few words, to one or several groups.
 
-Entries and groups are stored on the server (`/api/entries` and the group routes), so the live server must be deployed
-from the latest `main`; `bash run-mobile.sh --local` starts a test server that already has them. Left out on purpose:
+- **Journal** (the book button on Home): your notes and memories, newest first, with All / Notes / Memories and a search.
+  *Write it down* starts a note or a memory: pick a mood, give it a title and some words (the two prompts start a line for
+  you), add photos (they upload as you pick them), and choose *Only me* or *Share with friends*. A sad or worried mood
+  offers "Tell a friend". An entry opens on its own page with its photos, loves and replies; *Share* lets you pick people
+  from your groups (a message, and whether the photos go with it) or stop sharing. Entries friends shared with you show up
+  in the same list as "From Kabir", and you can love them and reply.
+
+Entries, groups and the journal are stored on the server (`/api/entries`, the group routes and `/api/journal`), so the live
+server must be deployed from the latest `main`; `bash run-mobile.sh --local` starts a test server that already has them. Left out on purpose:
 the design's soundscapes and music player, Apple/Google sign-in (the server has neither), dark mode, replying to a post,
-approving new members (joining with a code is instant), and leaving a group. None of it has been run on a real iPhone yet.
+approving new members (joining with a code is instant), and leaving a group. In the journal: notifications when something
+is shared or answered, friends who are not in one of your groups, choosing the date of a memory, and taking a photo with
+the camera (photos come from the library). Photos are kept on the server (`data/uploads`), not in the cloud. None of it has
+been run on a real iPhone yet.
 
 Group posts made on the website have five levels, not six emotions: in the app they show as the closest emotion
 (Great as Joy, Good as Calm, Okay as Meh, Low as Worry, Rough as Sad).
@@ -129,6 +139,7 @@ iOS renderer):
 ```bash
 node ../.claude/skills/moodcircle-mobile/scripts/verify-web.mjs --project . --flow verify/flows/auth.mjs
 node ../.claude/skills/moodcircle-mobile/scripts/verify-web.mjs --project . --flow verify/flows/groups.mjs
+node ../.claude/skills/moodcircle-mobile/scripts/verify-web.mjs --project . --flow verify/flows/journal.mjs
 ```
 
 ## Notes

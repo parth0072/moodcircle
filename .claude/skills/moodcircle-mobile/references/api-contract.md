@@ -9,7 +9,7 @@ node .claude/skills/moodcircle-mobile/scripts/contract-check.mjs --project mobil
 ```
 
 It starts a throwaway backend, drives every endpoint below through a two-user scenario, and fails when a
-schema no longer matches a response or a documented error code changes (55 checks; verified passing on the
+schema no longer matches a response or a documented error code changes (112 checks; verified passing on the
 snapshot, and verified to fail when a schema is deliberately broken).
 
 ## Contents
@@ -66,6 +66,18 @@ Auth column: `-` public, `T` needs the bearer token.
 | `PATCH /entries/:id` | T | `{ emotion?, intensity?, tags?, note? }` | `{ entry }` | 404 `ENTRY_NOT_FOUND`, 422 |
 | `DELETE /entries/:id` | T | | `{ message }` | 404 `ENTRY_NOT_FOUND` |
 | `GET /entries/stats?date=` | T | | `{ stats: { total, currentStreak, topEmotion\|null, firstEntryDate\|null } }` | 422 |
+| `POST /journal` | T | `{ type` (`note` `memory`)`, emotion` (the six)`, title` 1..80`, body? <=5000, photoIds? <=6` (ids from the upload, in display order)`}` | 201 `{ entry: JournalEntryDetail }` | 422 `VALIDATION_ERROR` `PHOTO_NOT_FOUND` |
+| `GET /journal?type=&q=&before=&limit=` | T | | `{ entries: JournalEntry[], nextBefore\|null }`: the person's own entries and the ones shared with them, newest first, 30 a page (`limit` up to 50); `q` searches title and text; `before` is the previous `nextBefore` | 422 |
+| `GET /journal/:id` | T | | `{ entry: JournalEntryDetail }` | 404 `JOURNAL_NOT_FOUND` (also for someone else's entry) |
+| `PATCH /journal/:id` | T | `{ type?, emotion?, title?, body?, photoIds? }`; `photoIds` is the complete new list, photos left out are deleted | `{ entry }` | 404 `JOURNAL_NOT_FOUND`, 422 |
+| `DELETE /journal/:id` | T | | `{ message }`: photos, shares, loves and replies go with it | 404 `JOURNAL_NOT_FOUND` |
+| `POST /journal/photos?width=&height=` | T | **the image bytes as the whole body**, `Content-Type` `image/jpeg` `image/png` or `image/webp` (10 MB at most) | 201 `{ photo: { id, url, width\|null, height\|null } }` | 415 `UNSUPPORTED_PHOTO`, 413 `PHOTO_TOO_LARGE`, 429 `TOO_MANY_PHOTOS` |
+| `GET /journal/photos/:id/file?e=&s=` | **link** | | the image; no `Authorization` header: the link's signature is the proof | 404 `PHOTO_NOT_FOUND` |
+| `GET /journal/people` | T | | `{ people: { id, name\|null, username\|null, avatar\|null, groups: { id, name }[] }[] }`: everyone in a group with the person | |
+| `PUT /journal/:id/shares` | T | `{ recipientIds: string[]` (may be empty)`, message? <=200, includePhotos? }`: the entry ends up shared with exactly these people | `{ sharedWith: { id, name\|null }[] }` | 403 `NOT_IN_SHARED_GROUP`, 404 `JOURNAL_NOT_FOUND`, 422 |
+| `PUT /journal/:id/love`, `DELETE /journal/:id/love` | T | | `{ loves: { count, mine } }` (both are safe to repeat) | 404 `JOURNAL_NOT_FOUND` |
+| `POST /journal/:id/replies` | T | `{ body }` 1..500 | 201 `{ reply: { id, body, createdAt, author, isMine } }` | 404 `JOURNAL_NOT_FOUND`, 422 |
+| `DELETE /journal/:id/replies/:replyId` | T | | `{ message }`: the author, or the owner of the entry | 404 `REPLY_NOT_FOUND`, 403 `FORBIDDEN` |
 | `GET /health` | - | | bare `{ ok: true }` | |
 
 Also present but out of scope for the mobile app for now: `/private/*` (private pairs) and `/premium/*`
@@ -89,6 +101,10 @@ FeedItem  { id, user, isOwn, level 1..5, emotion, note, isAnonymous, date, creat
 Reaction  { id, type, userId, createdAt }          (POST returns it with moodId as well)
 Entry     { id, emotion, intensity 1..5, tags: string[], note, date, createdAt, updatedAt }
 Nudge     { id, fromUserId, toUserId, groupId, date, createdAt }
+JournalEntry  { id, type, emotion, title, excerpt, createdAt, updatedAt, isMine, owner: { id, name|null },
+                photos: { id, url, width|null, height|null }[], photoCount, sharedWith: { id, name|null }[],
+                sharedMessage|null, loves: { count, mine }, replyCount }
+JournalEntryDetail = JournalEntry + { body, replies: { id, body, createdAt, author, isMine }[] }
 ```
 
 Facts about these shapes that are easy to get wrong (all checked by `contract-check.mjs`):
@@ -103,6 +119,16 @@ Facts about these shapes that are easy to get wrong (all checked by `contract-ch
 - `history` contains the whole group's moods, oldest first; filter on `isOwn` for a personal graph.
 - Saving `joyActivities` (even `[]`) sets `joyOnboarded: true`. At most 12 items (more is a 422); each is trimmed and
   cut to 60 characters, and blanks are dropped.
+- Journal (not the personal mood entries above): `GET /journal` has an `excerpt` (160 characters) and no `body` or
+  `replies`; the detail has both. An entry is private until its owner shares it, and someone else's entry is "not found",
+  never "forbidden". It can only be shared with people in a group with the owner (`/journal/people`); sharing is by
+  entry, not by group, so a person who leaves the group keeps what was already shared until the owner stops.
+- Journal photos: upload first (`POST /journal/photos`, bytes as the body, checked by their first bytes, not the header),
+  then put the returned ids in `photoIds`. A photo `url` is relative to the API root and carries a signature, so an
+  `<Image>` loads it without a login header; it is the same all day (the image cache keeps working) and valid for one to
+  two days, and every response carries fresh ones. `api/journal.ts` makes it absolute. Someone it was shared with only
+  gets the photos when `includePhotos` was true (otherwise `photos` is empty and `photoCount` 0). An upload that never
+  reaches an entry is deleted after a day; 30 can wait at once.
 - A username is stored lower-case; the uniqueness check is case-insensitive.
 - Usernames are 3 to 20 of letters, digits, underscore; names 1 to 40 chars.
 
@@ -123,6 +149,11 @@ Facts about these shapes that are easy to get wrong (all checked by `contract-ch
 | `SELF_NUDGE` / `TARGET_NOT_MEMBER` | 400 / 404 | nudge | UI must not offer it; refetch members |
 | `DUPLICATE_REACTION` | 409 | react | treat as already reacted; refetch the feed |
 | `MOOD_NOT_FOUND` / `REACTION_NOT_FOUND` / `MISMATCH` / `FORBIDDEN` | 404/400/403 | reactions | refetch the feed |
+| `JOURNAL_NOT_FOUND` | 404 | any journal call | "This entry is no longer here" (deleted, or sharing stopped): no retry button; the list refetches |
+| `PHOTO_NOT_FOUND` | 422 | write or change an entry | a photo id the person does not own, or one already on another entry: refetch and drop it |
+| `UNSUPPORTED_PHOTO` / `PHOTO_TOO_LARGE` / `TOO_MANY_PHOTOS` | 415 / 413 / 429 | photo upload | the tile shows "Upload failed" with Retry or Remove; the message is the backend's |
+| `NOT_IN_SHARED_GROUP` | 403 | share | inline on the share screen; the people list refetches |
+| `REPLY_NOT_FOUND` | 404 | delete a reply | refetch the entry |
 | `NETWORK_ERROR`, `HTTP_ERROR`, `INVALID_RESPONSE` | (client-made) | any | retry UI. Never a sign-out |
 
 ## Quirks and gaps
