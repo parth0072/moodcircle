@@ -5,6 +5,7 @@ import { AppText } from '@/components/app-text';
 import { Button } from '@/components/button';
 import { RoundButton } from '@/components/round-button';
 import { Screen } from '@/components/screen';
+import { SegmentedControl } from '@/components/segmented-control';
 import { useEntries } from '@/hooks/use-entries';
 import {
   RANGE_DAYS,
@@ -20,7 +21,6 @@ import { addDays, lastDays, localDate } from '@/utils/local-date';
 
 import { BalanceCard } from './balance-card';
 import { MoodBlobs } from './mood-blobs';
-import { SegmentedControl } from './segmented-control';
 import { WeekDots } from './week-dots';
 
 const RANGES: { value: InsightRange; label: string }[] = [

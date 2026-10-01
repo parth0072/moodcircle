@@ -3,17 +3,19 @@ import { Pressable, StyleSheet } from 'react-native';
 import { AppText } from '@/components/app-text';
 import { colors, fontFamily, radius } from '@/theme';
 
-interface TagChipProps {
+interface ChipProps {
   label: string;
   selected: boolean;
   onPress: () => void;
+  /** checkbox: any number can be on (tags). radio: one of a group (the journal's filter). */
+  role?: 'checkbox' | 'radio';
 }
 
-/** A tag under "What's behind it?": outlined, or filled with ink when chosen. */
-export function TagChip({ label, selected, onPress }: TagChipProps) {
+/** A pill under a question: outlined, or filled with ink when chosen. */
+export function Chip({ label, selected, onPress, role = 'checkbox' }: ChipProps) {
   return (
     <Pressable
-      accessibilityRole="checkbox"
+      accessibilityRole={role}
       accessibilityLabel={label}
       accessibilityState={{ checked: selected }}
       onPress={onPress}

@@ -9,8 +9,8 @@ interface RoundButtonProps {
   /** Required: the icon itself is decorative, so this is what a screen reader announces. */
   label: string;
   onPress?: () => void;
-  /** light: on cream, a tan outline. glass: on a blue screen, translucent white. */
-  tone?: 'light' | 'glass';
+  /** light: on cream, a tan outline. glass: on a blue screen, translucent white. scrim: over a photo. */
+  tone?: 'light' | 'glass' | 'scrim';
   style?: StyleProp<ViewStyle>;
 }
 
@@ -24,7 +24,7 @@ export function RoundButton({ icon, label, onPress, tone = 'light', style }: Rou
       onPress={onPress}
       style={({ pressed }) => [
         styles.base,
-        glass ? styles.glass : styles.light,
+        tone === 'scrim' ? styles.scrim : glass ? styles.glass : styles.light,
         { opacity: pressed ? 0.7 : 1 },
         style,
       ]}
@@ -43,6 +43,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   light: { borderWidth: 1.5, borderColor: colors.line },
+  scrim: { backgroundColor: colors.scrim },
   glass: {
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.24)',

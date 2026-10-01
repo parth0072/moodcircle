@@ -36,6 +36,34 @@ const ICONS = {
       <Path d="M13 7l4 4" />
     </>
   ),
+  // Journal: an open book.
+  book: (
+    <>
+      <Path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z" />
+      <Path d="M5 17a3 3 0 0 1 3-3h11M9 8h6" />
+    </>
+  ),
+  search: (
+    <>
+      <Circle cx="11" cy="11" r="7" />
+      <Path d="M20 20l-4-4" />
+    </>
+  ),
+  lock: (
+    <>
+      <Rect x="5" y="11" width="14" height="10" rx="2" />
+      <Path d="M8 11V7a4 4 0 0 1 8 0v4" />
+    </>
+  ),
+  camera: (
+    <>
+      <Rect x="3" y="6" width="18" height="14" rx="3" />
+      <Circle cx="12" cy="13" r="3.5" />
+      <Path d="M8 6l1.5-2h5L16 6" />
+    </>
+  ),
+  // Share: an arrow leaving a tray.
+  share: <Path d="M12 15V3M7 8l5-5 5 5M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5" />,
   bell: (
     <>
       <Path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8" />

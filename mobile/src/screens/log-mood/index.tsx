@@ -4,6 +4,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import type { Entry } from '@/api/schemas/entry';
 import { AppText } from '@/components/app-text';
 import { Button } from '@/components/button';
+import { Chip } from '@/components/chip';
 import { FlowerFace } from '@/components/flower-face';
 import { RoundButton } from '@/components/round-button';
 import { Screen } from '@/components/screen';
@@ -15,7 +16,6 @@ import { formatTime, localDate } from '@/utils/local-date';
 
 import { EmotionPicker } from './emotion-picker';
 import { IntensityBar } from './intensity-bar';
-import { TagChip } from './tag-chip';
 
 const NOTE_MAX = 500;
 const DEFAULT_INTENSITY = 3;
@@ -151,7 +151,7 @@ function LogForm({ existing, onBack, onSaved }: LogFormProps) {
         <AppText variant="titleMd">What&apos;s behind it?</AppText>
         <View style={styles.tags}>
           {ENTRY_TAGS.map((tag) => (
-            <TagChip
+            <Chip
               key={tag}
               label={tag}
               selected={tags.includes(tag)}

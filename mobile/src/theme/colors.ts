@@ -34,6 +34,11 @@ export const colors = {
   sandText: '#6B5B3A', // helper lines on the sand-coloured cards
   notYet: '#EFE8D8', // a member who has not checked in yet (same as track)
   notYetOnBlue: '#5E73BE', // the same, on the blue group screen
+  // Journal
+  promptBorder: '#C9B98F', // the dashed "What happened?" chips and the "Add photo" tile
+  skyTint: '#E3F1FB', // the "Heavy day?" banner
+  bodyInk: '#34405F', // the words of a memory and of a reply
+  scrim: 'rgba(250, 246, 238, 0.9)', // round buttons over a photo
   // Legacy names still used by screens that are being replaced; removed together with them.
   border: '#E9E1D0',
   borderStrong: '#DDD0B4',
