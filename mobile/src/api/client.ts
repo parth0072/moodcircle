@@ -3,7 +3,12 @@ import { ApiError } from './errors';
 /** The slice of `fetch` the client uses. `expo/fetch` satisfies it; tests pass a stub. */
 export type FetchLike = (
   url: string,
-  init: { method: string; headers: Record<string, string>; body?: string; signal?: AbortSignal },
+  init: {
+    method: string;
+    headers: Record<string, string>;
+    body?: string | Uint8Array<ArrayBuffer>;
+    signal?: AbortSignal;
+  },
 ) => Promise<{ status: number; ok: boolean; text(): Promise<string> }>;
 
 export interface ApiClientOptions {
@@ -18,6 +23,10 @@ export interface ApiClientOptions {
 
 export interface RequestOptions {
   body?: unknown;
+  /** A file instead of JSON: the bytes are the whole request body (photo uploads). */
+  bytes?: { data: Uint8Array<ArrayBuffer>; contentType: string };
+  /** Overrides the client's timeout for this request (a photo takes longer than a JSON call). */
+  timeoutMs?: number;
   /**
    * Send the session token (default). Pass `false` for sign-in calls: a 401 there means
    * "wrong credentials", never "your session expired".
@@ -37,16 +46,17 @@ export function createApiClient(options: ApiClientOptions) {
   const { baseUrl, fetch, getToken, onUnauthorized, timeoutMs = 15_000 } = options;
 
   async function request<T>(method: string, path: string, opts: RequestOptions = {}): Promise<T> {
-    const { body, auth = true, token: explicitToken, signal } = opts;
+    const { body, bytes, auth = true, token: explicitToken, signal, timeoutMs: ownTimeout } = opts;
     const token = auth ? (explicitToken ?? getToken()) : null;
 
     const headers: Record<string, string> = { Accept: 'application/json' };
-    if (body !== undefined) headers['Content-Type'] = 'application/json';
+    if (bytes) headers['Content-Type'] = bytes.contentType;
+    else if (body !== undefined) headers['Content-Type'] = 'application/json';
     if (token) headers.Authorization = `Bearer ${token}`;
 
     // One controller carries both our timeout and the caller's cancellation (React Query passes a signal).
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const timer = setTimeout(() => controller.abort(), ownTimeout ?? timeoutMs);
     const forwardAbort = () => controller.abort();
     if (signal?.aborted) controller.abort();
     else signal?.addEventListener('abort', forwardAbort, { once: true });
@@ -58,7 +68,7 @@ export function createApiClient(options: ApiClientOptions) {
       const res = await fetch(`${baseUrl}${path}`, {
         method,
         headers,
-        body: body === undefined ? undefined : JSON.stringify(body),
+        body: bytes ? bytes.data : body === undefined ? undefined : JSON.stringify(body),
         signal: controller.signal,
       });
       status = res.status;
@@ -96,13 +106,22 @@ export function createApiClient(options: ApiClientOptions) {
     });
   }
 
-  type Extra = Omit<RequestOptions, 'body'>;
+  type Extra = Omit<RequestOptions, 'body' | 'bytes'>;
   return {
     get: <T>(path: string, extra?: Extra) => request<T>('GET', path, extra),
     post: <T>(path: string, body?: unknown, extra?: Extra) =>
       request<T>('POST', path, { ...extra, body }),
     patch: <T>(path: string, body?: unknown, extra?: Extra) =>
       request<T>('PATCH', path, { ...extra, body }),
+    put: <T>(path: string, body?: unknown, extra?: Extra) =>
+      request<T>('PUT', path, { ...extra, body }),
+    /** POST a file as the whole body (`contentType` is its MIME type, like image/jpeg). */
+    postBytes: <T>(
+      path: string,
+      data: Uint8Array<ArrayBuffer>,
+      contentType: string,
+      extra?: Extra,
+    ) => request<T>('POST', path, { ...extra, bytes: { data, contentType } }),
     delete: <T>(path: string, extra?: Extra) => request<T>('DELETE', path, extra),
   };
 }

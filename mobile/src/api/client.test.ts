@@ -165,6 +165,49 @@ describe('api client', () => {
     await expect(client.get('/groups')).rejects.toMatchObject({ kind: 'network' });
   });
 
+  it('sends a file as the whole body with its own content type', async () => {
+    const fetch = stubFetch({
+      status: 201,
+      body: { success: true, data: { photo: { id: 'p1' } } },
+    });
+    const { client } = makeClient(fetch);
+    const bytes = new Uint8Array([0xff, 0xd8, 0xff, 0xe0]);
+    await expect(client.postBytes('/journal/photos', bytes, 'image/jpeg')).resolves.toEqual({
+      photo: { id: 'p1' },
+    });
+    const [url, init] = fetch.mock.calls[0];
+    expect(url).toBe('https://api.test/api/journal/photos');
+    expect(init.method).toBe('POST');
+    expect(init.headers['Content-Type']).toBe('image/jpeg');
+    expect(init.headers.Authorization).toBe('Bearer tok-1');
+    expect(init.body).toBe(bytes); // not turned into JSON or text
+  });
+
+  it('sends PUT with a JSON body', async () => {
+    const fetch = stubFetch({ status: 200, body: { success: true, data: {} } });
+    const { client } = makeClient(fetch);
+    await client.put('/journal/e1/shares', { recipientIds: ['u2'] });
+    const [, init] = fetch.mock.calls[0];
+    expect(init.method).toBe('PUT');
+    expect(init.body).toBe('{"recipientIds":["u2"]}');
+  });
+
+  it('lets one request wait longer than the client default (a photo upload)', async () => {
+    const slow: FetchLike = (_url, init) =>
+      new Promise((resolve, reject) => {
+        init.signal?.addEventListener('abort', () => reject(new Error('aborted')));
+        setTimeout(
+          () => resolve({ status: 200, ok: true, text: async () => '{"success":true,"data":{}}' }),
+          60,
+        );
+      });
+    const { client } = makeClient(slow, 'tok-1', { timeoutMs: 20 });
+    await expect(client.get('/groups')).rejects.toMatchObject({ kind: 'network' });
+    await expect(
+      client.postBytes('/journal/photos', new Uint8Array([1]), 'image/jpeg', { timeoutMs: 500 }),
+    ).resolves.toEqual({});
+  });
+
   it('honours caller cancellation', async () => {
     const hang: FetchLike = (_url, init) =>
       new Promise((_resolve, reject) => {
