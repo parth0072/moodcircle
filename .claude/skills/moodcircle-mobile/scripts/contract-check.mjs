@@ -17,6 +17,7 @@ import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 
 import { makeApi, startBackend } from './lib/backend.mjs';
+import { photos } from './lib/png.mjs';
 
 const { values: args } = parseArgs({
   options: { project: { type: 'string', default: 'mobile' }, schemas: { type: 'string' } },
@@ -40,7 +41,7 @@ register('./lib/ts-resolve-hooks.mjs', import.meta.url);
 const schemaDir = resolve(args.schemas ?? join(args.project, 'src/api/schemas'));
 const load = (name) => import(pathToFileURL(join(schemaDir, `${name}.ts`)).href);
 const S = {};
-for (const name of ['auth', 'group', 'mood', 'nudge', 'streak', 'entry']) {
+for (const name of ['auth', 'group', 'mood', 'nudge', 'streak', 'entry', 'journal']) {
   try {
     Object.assign(S, await load(name));
   } catch (e) {
@@ -171,6 +172,39 @@ try {
   const overview = parses(S.overviewResponse, await request('GET', '/groups/overview', undefined, A.token), 'GET /groups/overview')?.groups;
   const quietOverview = overview?.find((x) => x.id === quiet.id);
   check(overview?.length === 2 && quietOverview?.members.length === 2 && quietOverview.today.length === 1, 'the overview lists each group with its members and the posts of today');
+
+  // ── the journal: notes and memories with photos, sharing, loves and replies ──
+  const photo1 = parses(S.photoResponse, await api.upload('/journal/photos?width=120&height=90', photos.sunset, 'image/png', C.token), 'POST /journal/photos')?.photo;
+  check(photo1 && /^\/journal\/photos\/[0-9a-f-]{36}\/file\?e=\d+&s=[0-9a-f]{32}$/.test(photo1.url) && photo1.width === 120 && photo1.height === 90, 'a photo comes back with a link relative to the API root, and its size');
+  await failsWith(api.upload('/journal/photos', Buffer.from('not an image at all, just some text'), 'image/jpeg', C.token), 415, 'UNSUPPORTED_PHOTO', 'a file that is not an image');
+  await failsWith(request('POST', '/journal', { type: 'diary', emotion: 'joy', title: 'x' }, C.token), 422, 'VALIDATION_ERROR', 'an unknown entry type');
+  const memory = parses(S.journalEntryResponse, await request('POST', '/journal', { type: 'memory', emotion: 'joy', title: 'Beach day', body: 'We stayed until sunset.', photoIds: [photo1.id] }, C.token), 'POST /journal')?.entry;
+  check(memory?.isMine === true && memory.photoCount === 1 && memory.sharedWith.length === 0 && memory.loves.count === 0, 'a new memory is private, with its photo');
+  const served = await fetch(`${base}/api${memory.photos[0].url}`);
+  check(served.status === 200 && served.headers.get('content-type') === 'image/png', 'the photo link serves the image without a login header');
+  const listed = parses(S.journalListResponse, await request('GET', '/journal?type=memory&q=beach', undefined, C.token), 'GET /journal');
+  check(listed?.entries.length === 1 && listed.entries[0].excerpt === 'We stayed until sunset.' && listed.nextBefore === null, 'the list finds it by its words, with an excerpt and no next page');
+  await failsWith(request('GET', `/journal/${memory.id}`, undefined, B.token), 404, 'JOURNAL_NOT_FOUND', "someone else's entry");
+
+  const sharePeople = parses(S.peopleResponse, await request('GET', '/journal/people', undefined, C.token), 'GET /journal/people')?.people;
+  check(sharePeople?.length === 1 && sharePeople[0].id === A.user.id && sharePeople[0].groups[0].name === 'Quiet circle', 'the people to share with are the ones in a group with you');
+  await failsWith(request('PUT', `/journal/${memory.id}/shares`, { recipientIds: [B.user.id] }, C.token), 403, 'NOT_IN_SHARED_GROUP', 'sharing with someone outside your groups');
+  const sentTo = parses(S.sharesResponse, await request('PUT', `/journal/${memory.id}/shares`, { recipientIds: [A.user.id], message: 'Thought of you.', includePhotos: true }, C.token), 'PUT /journal/:id/shares')?.sharedWith;
+  check(sentTo?.length === 1 && sentTo[0].id === A.user.id, 'an entry can be shared with someone in a group with you');
+  const seen = parses(S.journalListResponse, await request('GET', '/journal', undefined, A.token), 'GET /journal (what was shared with me)')?.entries.find((e) => e.id === memory.id);
+  check(seen && seen.isMine === false && seen.sharedMessage === 'Thought of you.' && seen.sharedWith.length === 0 && seen.photoCount === 1 && seen.owner.id === C.user.id, 'the person it was shared with sees it: the message, the photo, who sent it');
+
+  const loved = parses(S.lovesResponse, await request('PUT', `/journal/${memory.id}/love`, undefined, A.token), 'PUT /journal/:id/love')?.loves;
+  check(loved?.count === 1 && loved.mine === true, 'a love is counted and is the person’s own');
+  const reply = parses(S.replyResponse, await request('POST', `/journal/${memory.id}/replies`, { body: 'Best day in ages.' }, A.token), 'POST /journal/:id/replies')?.reply;
+  const full = parses(S.journalEntryResponse, await request('GET', `/journal/${memory.id}`, undefined, C.token), 'GET /journal/:id')?.entry;
+  check(full?.loves.count === 1 && full.loves.mine === false && full.replies.length === 1 && full.replies[0].author.id === A.user.id && full.replies[0].isMine === false && full.body === 'We stayed until sunset.', 'the owner sees the love, the reply and the whole text');
+  const changed = parses(S.journalEntryResponse, await request('PATCH', `/journal/${memory.id}`, { title: 'Beach day, again', photoIds: [] }, C.token), 'PATCH /journal/:id')?.entry;
+  check(changed?.title === 'Beach day, again' && changed.photoCount === 0, 'an entry can be changed, and its photos taken off');
+  check((await fetch(`${base}/api${memory.photos[0].url}`)).status === 404, 'a photo taken off an entry is gone');
+  parses(S.messageResponse, await request('DELETE', `/journal/${memory.id}/replies/${reply.id}`, undefined, C.token), 'DELETE /journal/:id/replies/:replyId');
+  parses(S.messageResponse, await request('DELETE', `/journal/${memory.id}`, undefined, C.token), 'DELETE /journal/:id');
+  await failsWith(request('GET', `/journal/${memory.id}`, undefined, A.token), 404, 'JOURNAL_NOT_FOUND', 'an entry that was deleted, for the person it was shared with');
 
   // ── nudges ──
   parses(S.nudgeResponse, await request('POST', `/groups/${g.id}/nudge`, { targetUserId: A.user.id }, B.token), 'POST .../nudge');

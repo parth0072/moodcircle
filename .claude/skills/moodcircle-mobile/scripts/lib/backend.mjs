@@ -81,9 +81,21 @@ export function makeApi(baseUrl) {
     if (!json.success) throw Object.assign(new Error(`${method} ${path} -> ${status} ${json.code}: ${json.message}`), { status, code: json.code });
     return json.data;
   };
+  // Send a file as the whole request body (a journal photo), as the app does.
+  const upload = async (path, bytes, contentType, token) => {
+    const r = await fetch(`${baseUrl}/api${path}`, {
+      method: 'POST',
+      headers: { 'content-type': contentType, ...(token ? { authorization: `Bearer ${token}` } : {}) },
+      body: bytes,
+    });
+    const json = await r.json();
+    if (!json.success) throw Object.assign(new Error(`POST ${path} -> ${r.status} ${json.code}: ${json.message}`), { status: r.status, code: json.code });
+    return json.data;
+  };
   return {
     raw,
     request,
+    upload,
     uniqueEmail: (prefix = 'user') => `${prefix}.${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}@example.com`,
     // Seed an account without touching the UI. Relies on the dev-only `otp` in the response.
     async signIn(email) {
