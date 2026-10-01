@@ -11,7 +11,7 @@ cp .env.example .env      # fill in JWT_SECRET and RAZORPAY_KEY_SECRET
 npm install
 npm run dev               # nodemon, hot-reload
 npm start                 # production
-npm test                  # personal-entries API tests (starts its own server and database)
+npm test                  # API tests: entries, groups, journal (each starts its own server and database)
 ```
 
 The server starts on `http://localhost:3000`.  
@@ -28,6 +28,8 @@ The frontend (`public/index.html`) is served at `/`.
 | `JWT_EXPIRES_IN` | Token lifetime (default `7d`) |
 | `OTP_EXPIRES_MINUTES` | OTP validity window (default 10) |
 | `RAZORPAY_KEY_SECRET` | Razorpay webhook signing secret |
+| `UPLOAD_DIR` | Where journal photos are kept (default `data/uploads`, next to the database; `data/` is not in git, so a deploy keeps them) |
+| `PHOTO_MAX_BYTES` | Largest journal photo accepted (default 10 MB) |
 
 ---
 
@@ -252,6 +254,68 @@ owner can see, change or delete an entry. All routes require `Authorization: Bea
 
 ---
 
+### Journal *(notes, memories & photos)*
+
+Notes for hard days, memories (with photos) for good ones: a different thing from the personal mood entries above. An
+entry is private to its owner until the owner shares it, and it can only be shared with people who are in a group with
+them. All routes require `Authorization: Bearer <token>`, except a photo link (see Photos).
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/journal` | Write a note or memory |
+| GET | `/api/journal?type=&q=&before=&limit=` | Your entries and the ones shared with you, newest first. `type`: `note` or `memory`. `q` searches title and text. 30 per page (`limit` up to 50); `nextBefore` is the `before` for the next page, `null` at the end |
+| GET | `/api/journal/:id` | One entry in full, with its replies |
+| PATCH | `/api/journal/:id` | Change `type`, `emotion`, `title`, `body` or `photoIds` (owner only) |
+| DELETE | `/api/journal/:id` | Delete the entry with its photos, shares, loves and replies (owner only) |
+| POST | `/api/journal/photos` | Upload a photo: the image itself is the request body (`Content-Type: image/jpeg`, `image/png` or `image/webp`; optional `?width=&height=`) |
+| GET | `/api/journal/photos/:id/file?e=&s=` | The photo's bytes, without a login header: the link carries an expiring signature |
+| GET | `/api/journal/people` | Who an entry can be sent to: everyone who is in a group with you, with the groups |
+| PUT | `/api/journal/:id/shares` | Share with exactly these people: `recipientIds`, optional `message` (up to 200) and `includePhotos` (default true). An empty list stops sharing (owner only) |
+| PUT, DELETE | `/api/journal/:id/love` | Love or un-love an entry (the owner, and the people it was shared with) |
+| POST | `/api/journal/:id/replies` | Reply, 1–500 characters (the owner, and the people it was shared with) |
+| DELETE | `/api/journal/:id/replies/:replyId` | Delete a reply (its author, or the owner of the entry) |
+
+**Request — write an entry**
+```json
+{ "type": "memory", "emotion": "joy", "title": "Beach day with Kabir", "body": "We stayed until the sun went down.", "photoIds": ["<photo id>", "<photo id>"] }
+```
+
+- `type`: `note` or `memory`. `emotion`: `joy`, `calm`, `sad`, `worry`, `anger` or `meh`. `title`: 1–80 characters. `body`:
+  optional, up to 5000. `photoIds`: up to 6, in the order to show them.
+- **Photos:** upload each one first (`POST /api/journal/photos` returns `{ "photo": { "id", "url", "width", "height" } }`),
+  then put the ids in `photoIds`. A photo goes on one entry of its owner. The server checks the bytes, not the header: only
+  real JPEG, PNG and WebP files are kept (10 MB at most). An upload that never reaches an entry is deleted after a day, and
+  at most 30 can wait at once. Files live in `UPLOAD_DIR`. `url` is relative to the API root (`/journal/photos/<id>/file?e=…&s=…`;
+  the app puts its API address in front). A link is valid for one to two days, stays the same all day (so phones can cache it),
+  and every response carries fresh ones. On `PATCH`, `photoIds` is the complete new list: photos left out are deleted.
+- **Sharing:** access follows the share, not the group: someone who leaves a group keeps what was already shared until the
+  owner stops sharing it. People it was shared with can read, love and reply, nothing else. They only get the photos when
+  `includePhotos` was true.
+- Errors: `VALIDATION_ERROR` (422, first message only), `JOURNAL_NOT_FOUND` (404, also for someone else's entry),
+  `PHOTO_NOT_FOUND` (422, or 404 for a bad photo link), `UNSUPPORTED_PHOTO` (415), `PHOTO_TOO_LARGE` (413),
+  `TOO_MANY_PHOTOS` (429), `NOT_IN_SHARED_GROUP` (403), `REPLY_NOT_FOUND` (404), `FORBIDDEN` (403).
+
+**Response — entry** (the list leaves out `body` and `replies`; it has a short `excerpt` instead)
+```json
+{
+  "entry": {
+    "id": "…", "type": "memory", "emotion": "joy", "title": "Beach day with Kabir",
+    "excerpt": "We stayed until the sun went down.", "body": "We stayed until the sun went down.",
+    "createdAt": "2026-09-27T15:12:00.000Z", "updatedAt": "2026-09-27T15:12:00.000Z",
+    "isMine": true, "owner": { "id": "…", "name": "Aria" },
+    "photos": [{ "id": "…", "url": "/journal/photos/…/file?e=…&s=…", "width": 4032, "height": 3024 }], "photoCount": 1,
+    "sharedWith": [{ "id": "…", "name": "Kabir" }], "sharedMessage": null,
+    "loves": { "count": 1, "mine": false }, "replyCount": 1,
+    "replies": [{ "id": "…", "body": "Best day in ages.", "createdAt": "…", "author": { "id": "…", "name": "Kabir" }, "isMine": false }]
+  }
+}
+```
+
+`sharedWith` is the owner's view (who it went to); for the people it was shared with it is empty and `sharedMessage` holds the
+message that came with it. Deleting a user account must also delete their journal entries and photos.
+
+---
+
 ### Private Mode *(Premium only)*
 
 These routes return `403` for non-premium users.
@@ -299,13 +363,15 @@ src/
 ├── app.js                   # Express app + route mounting
 ├── stores/
 │   ├── index.js             # In-memory data stores (swap with DB later)
-│   └── entries.js           # Personal entries: a real SQLite table with an index
+│   ├── entries.js           # Personal entries: a real SQLite table with an index
+│   └── journal.js           # Journal: entries, photos, shares, loves and replies (SQLite tables)
 ├── utils/
 │   ├── response.js          # ok() / fail() helpers
 │   ├── otp.js               # OTP generation + dispatch
 │   ├── timezone.js          # IST date helpers
 │   ├── dates.js             # Calendar-day helpers for personal entries
 │   ├── entry-stats.js       # Streak for personal entries
+│   ├── journal-photos.js    # Photo files on disk, and the signed links they are served by
 │   └── streak.js            # Streak update + read logic
 ├── middleware/
 │   ├── auth.middleware.js   # JWT verification
@@ -320,7 +386,8 @@ src/
 │   ├── streak.controller.js
 │   ├── private.controller.js
 │   ├── premium.controller.js
-│   └── entry.controller.js
+│   ├── entry.controller.js
+│   └── journal.controller.js
 └── routes/
     ├── auth.routes.js
     ├── group.routes.js
@@ -330,7 +397,8 @@ src/
     ├── streak.routes.js
     ├── private.routes.js
     ├── premium.routes.js
-    └── entry.routes.js
+    ├── entry.routes.js
+    └── journal.routes.js
 test/                        # npm test (Node's built-in test runner, real server, throwaway database)
 public/
 └── index.html               # Frontend SPA
