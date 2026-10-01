@@ -47,6 +47,7 @@ const setup = async () => {
   const handlers = {
     onOpenProfile: jest.fn(),
     onOpenGroups: jest.fn(),
+    onOpenJournal: jest.fn(),
     onOpenInsights: jest.fn(),
     onOpenLog: jest.fn(),
   };
@@ -169,13 +170,16 @@ describe('HomeScreen', () => {
 
   it('opens the profile, the groups, the insights, and the log (with the entry just made)', async () => {
     jest.mocked(createEntry).mockResolvedValue(entry());
-    const { view, onOpenProfile, onOpenGroups, onOpenInsights, onOpenLog } = await setup();
+    const { view, onOpenProfile, onOpenGroups, onOpenJournal, onOpenInsights, onOpenLog } =
+      await setup();
     await fireEvent.press(view.getByRole('button', { name: 'Profile' }));
     await fireEvent.press(view.getByRole('button', { name: 'Groups' }));
+    await fireEvent.press(view.getByRole('button', { name: 'Journal' }));
     await fireEvent.press(view.getByRole('button', { name: 'Mood insights' }));
     await fireEvent.press(view.getByRole('button', { name: 'Log a mood' }));
     expect(onOpenProfile).toHaveBeenCalledTimes(1);
     expect(onOpenGroups).toHaveBeenCalledTimes(1);
+    expect(onOpenJournal).toHaveBeenCalledTimes(1);
     expect(onOpenInsights).toHaveBeenCalledTimes(1);
     expect(onOpenLog).toHaveBeenLastCalledWith(undefined);
 

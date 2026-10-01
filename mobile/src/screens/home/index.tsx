@@ -26,6 +26,7 @@ const QUICK_INTENSITY = 3;
 interface HomeScreenProps {
   onOpenProfile: () => void;
   onOpenGroups: () => void;
+  onOpenJournal: () => void;
   onOpenInsights: () => void;
   /** Opens the Log screen: for an entry to add details to, or (no id) to log a new one there. */
   onOpenLog: (entryId?: string) => void;
@@ -40,6 +41,7 @@ interface Picked {
 export function HomeScreen({
   onOpenProfile,
   onOpenGroups,
+  onOpenJournal,
   onOpenInsights,
   onOpenLog,
 }: HomeScreenProps) {
@@ -95,6 +97,7 @@ export function HomeScreen({
             {name}
           </AppText>
           <RoundButton icon="users" label="Groups" tone="glass" onPress={onOpenGroups} />
+          <RoundButton icon="book" label="Journal" tone="glass" onPress={onOpenJournal} />
           <RoundButton icon="pie" label="Mood insights" tone="glass" onPress={onOpenInsights} />
           <RoundButton
             icon="calendar"

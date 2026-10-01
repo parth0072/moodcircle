@@ -1,4 +1,10 @@
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 
 import {
   addJournalReply,
@@ -31,6 +37,8 @@ export function useJournalList(filter: JournalFilter) {
     queryFn: ({ pageParam }) => listJournal(filter, pageParam),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (last) => last.nextBefore ?? undefined,
+    // Typing a search or switching the filter keeps the old list on screen until the new one arrives.
+    placeholderData: keepPreviousData,
     ...ALWAYS_REFETCH,
   });
 }

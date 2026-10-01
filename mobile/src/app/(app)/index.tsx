@@ -8,6 +8,7 @@ export default function HomeRoute() {
     <HomeScreen
       onOpenProfile={() => router.push('/profile')}
       onOpenGroups={() => router.push('/groups')}
+      onOpenJournal={() => router.push('/journal')}
       onOpenInsights={() => router.push('/insights')}
       onOpenLog={(entryId) => router.push({ pathname: '/log', params: entryId ? { entryId } : {} })}
     />
